@@ -1,0 +1,72 @@
+classDiagram
+    direction LR
+    class RoomManager {
+        ConcurrentDictionary~string, Room~ rooms
+        ConcurrentDictionary~string, string~ roomOfPlayer
+        Create(host) Room
+        Find(roomCode) Room
+        FindByPlayer(playerId) Room
+    }
+    class SessionManager {
+        ConcurrentDictionary~string, Session~ byPlayer
+        ConcurrentDictionary~string, string~ byToken
+        Create(name) Session
+        FindByToken(token) Session
+        Remove(session)
+    }
+    class Session {
+        string PlayerId
+        string ResumeToken
+        Connection Conn
+        ConnState State
+        DateTime LastSeenUtc
+    }
+    class Connection {
+        Channel~string~ outbox
+        Enqueue(frame) bool
+        Close()
+    }
+    class Room {
+        string Code
+        RoomStatus Status
+        string HostId
+        int MaxPlayers
+        List~Member~ Members
+        GameState Game
+        Channel~RoomCommand~ Inbox
+        Dictionary Processed
+    }
+    class Member {
+        Session Session
+        bool Ready
+    }
+    class RoomCommand {
+        ClientMessage
+        ConnectionLost
+        ConnectionRestored
+        TimerFired
+        RecoveryConfirm
+    }
+    class RoomStatus {
+        <<enumeration>>
+        LOBBY
+        IN_GAME
+        ENDED
+        RECOVERING
+        CLOSED
+    }
+    class ConnState {
+        <<enumeration>>
+        CONNECTED
+        DISCONNECTED
+        AWAITING_CONFIRM
+        LEFT_MATCH
+    }
+    RoomManager "1" o-- "*" Room
+    SessionManager "1" o-- "*" Session
+    Session "1" --> "0..1" Connection
+    Room "1" *-- "2..4" Member
+    Member --> Session
+    Room ..> RoomCommand : đọc từ Inbox
+    Room --> RoomStatus
+    Session --> ConnState

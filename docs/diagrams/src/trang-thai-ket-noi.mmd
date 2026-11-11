@@ -1,0 +1,13 @@
+stateDiagram-v2
+    direction LR
+    [*] --> CONNECTED: HELLO
+    CONNECTED --> DISCONNECTED: 45s không hoạt động,<br/>socket lỗi hoặc đóng, BYE
+    DISCONNECTED --> CONNECTED: HELLO có resumeToken<br/>còn hiệu lực
+    DISCONNECTED --> BiXoa: Phòng chờ quá 30s
+    DISCONNECTED --> LEFT_MATCH: Trong ván: quá 60s ở lượt<br/>hoặc token hết hạn 10 phút
+    CONNECTED --> AWAITING_CONFIRM: Server khởi động lại<br/>và khôi phục ván
+    AWAITING_CONFIRM --> CONNECTED: Xác nhận trong 60s
+    AWAITING_CONFIRM --> LEFT_MATCH: Từ chối hoặc quá 60s
+    BiXoa: Bị xóa khỏi phòng
+    BiXoa --> [*]
+    LEFT_MATCH --> [*]
