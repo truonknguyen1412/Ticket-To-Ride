@@ -1,0 +1,33 @@
+sequenceDiagram
+    autonumber
+    participant C as GameClient
+    participant N as Connection
+    participant D as Dispatcher
+    participant R as Room (actor)
+    participant S as SQL Server
+
+    C->>N: Khung (reqId, type, payload)
+    N->>D: JSON đã tách khung
+    D->>D: Kiểm tra phiên bản, schema, đã HELLO
+    D->>R: Inbox.TryWrite(ClientMessage)
+    R->>R: Tra Processed theo (playerId, reqId)
+    alt reqId đã xử lý
+        R-->>N: Enqueue(phản hồi cũ)
+    else reqId mới
+        R->>R: Kiểm tra luật trên trạng thái hiện tại
+        alt Sai luật
+            R-->>N: Enqueue(ERROR), không đổi gì
+        else Hợp lệ
+            R->>R: Tính trạng thái mới trên bản nháp, stateVersion + 1
+            Note over R,S: Phòng chờ bỏ qua bước ghi SQL
+            R->>S: Một transaction: trạng thái ván + reqId
+            alt Ghi lỗi
+                R-->>N: Enqueue(INTERNAL_ERROR), bộ nhớ giữ nguyên
+            else Commit xong
+                R->>R: Thay bản nháp vào bộ nhớ
+                R-->>N: Enqueue(ACK)
+                R-->>N: Enqueue(STATE_UPDATE) cho cả phòng
+            end
+        end
+    end
+    N-->>C: Hàng đợi ghi riêng gửi về client
