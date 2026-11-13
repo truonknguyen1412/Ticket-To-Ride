@@ -12,6 +12,9 @@ public static class Protocol
     public const int MinPlayers = 2;
     public const int MaxPlayers = 4;
     public const int MaxProcessedPerPlayer = 200;    // cache reqId đã xử lý (mục 5)
+    public const int TokenLifetimeHours = 12;        // resumeToken của server sống tối đa 12 giờ (gia hạn khi nối lại)
+    public const int MaxAuthFailures = 5;            // sai quá 5 lần trên một kết nối thì server đóng kết nối
+    public const int ForgotCooldownSeconds = 60;     // mỗi email chỉ được xin đặt lại MK 1 lần / 60 giây
     public const int MaxPlayerNameLength = 20;       // [Giả định] validate đầu vào
 }
 
@@ -37,6 +40,12 @@ public static class MessageTypes
     public const string RoomUpdated = "ROOM_UPDATED";
     public const string PlayerConnection = "PLAYER_CONNECTION";
     public const string SyncRequest = "SYNC_REQUEST";
+
+    // Xác thực (mở rộng so với tài liệu giao thức): chạy trước khi có phiên
+    public const string AuthRegister = "AUTH_REGISTER";   // idToken Firebase + username -> WELCOME
+    public const string AuthLogin = "AUTH_LOGIN";         // idToken Firebase -> WELCOME
+    public const string AuthForgot = "AUTH_FORGOT";       // email -> ACK (server nhờ Firebase gửi mail đặt lại MK)
+    public const string AuthLogout = "AUTH_LOGOUT";       // thu hồi token của phiên hiện tại -> ACK
 }
 
 /// <summary>Mã lỗi. Có trong tài liệu: ROOM_IN_GAME, GAME_ENDED, RESUME_REJECTED, INTERNAL_ERROR. Còn lại là [Giả định].</summary>
@@ -61,6 +70,18 @@ public static class ErrorCodes
     public const string NotAllReady = "NOT_ALL_READY";
     public const string NotInRoom = "NOT_IN_ROOM";
     public const string AlreadyInRoom = "ALREADY_IN_ROOM";
+
+    // Xác thực
+    public const string AuthRequired = "AUTH_REQUIRED";          // chưa đăng nhập mà gửi lệnh cần phiên
+    public const string AlreadyLoggedIn = "ALREADY_LOGGED_IN";
+    public const string TokenInvalid = "TOKEN_INVALID";          // idToken Firebase sai/hết hạn/bị thu hồi
+    public const string TokenExpired = "TOKEN_EXPIRED";          // resumeToken của server hết hạn
+    public const string AccountExists = "ACCOUNT_EXISTS";
+    public const string EmailInvalid = "EMAIL_INVALID";
+    public const string TooManyAttempts = "TOO_MANY_ATTEMPTS";
+    public const string Cooldown = "COOLDOWN";
+    public const string SessionReplaced = "SESSION_REPLACED";    // tài khoản đăng nhập ở nơi khác
+    public const string AuthUnavailable = "AUTH_UNAVAILABLE";    // server chưa cấu hình/không gọi được Firebase
 }
 
 /// <summary>Giá trị trên đường truyền. RECOVERING/CLOSED là nội bộ, không gửi cho client.</summary>

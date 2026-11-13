@@ -8,29 +8,46 @@ namespace TicketToRide.Server;
 
 public sealed class GameServer
 {
-    readonly SessionManager _sessions = new();
+    readonly ServerOptions _options;
+    readonly ServerLogger _log;
+    readonly SessionManager _sessions;
     readonly RoomManager _rooms;
+    readonly AccountStore _accounts;
     readonly Dispatcher _dispatcher;
     readonly ConcurrentDictionary<Guid, Connection> _connections = new();
     TcpListener? _listener;
     CancellationTokenSource? _cts;
 
-    public event Action<string>? Log;
-
-    public GameServer()
+    public GameServer(ServerOptions options, ServerLogger log)
     {
+        _options = options;
+        _log = log;
+        _sessions = new SessionManager(log);
         _rooms = new RoomManager(_sessions);
-        _dispatcher = new Dispatcher(_sessions, _rooms);
+        _accounts = new AccountStore(options.AccountsFile);
+
+        IIdentityProvider? idp = options.FirebaseApiKey != null ? new FirebaseIdentityProvider(options.FirebaseApiKey) : null;
+        var auth = new AuthService(_sessions, _rooms, _accounts, idp, log);
+        _dispatcher = new Dispatcher(_sessions, _rooms, auth, options, log);
     }
 
-    public void Start(int port)
+    public void Start()
     {
         if (_listener != null) throw new InvalidOperationException("Server đang chạy");
 
         _cts = new CancellationTokenSource();
-        _listener = new TcpListener(IPAddress.Any, port);
+        _listener = new TcpListener(IPAddress.Any, _options.Port);
         _listener.Start();
-        Log?.Invoke($"Server lắng nghe cổng {port}");
+
+        _log.Ok("HE THONG", $"Server lắng nghe cổng {_options.Port}");
+        _log.Info("HE THONG", $"Tài khoản đã biết: {_accounts.Count} (file {_accounts.FilePath})");
+        _log.Info("HE THONG", $"Token phiên: sống {Protocol.TokenLifetimeHours} giờ, gia hạn khi nối lại hoặc nhận PING; sai xác thực {Protocol.MaxAuthFailures} lần thì đóng kết nối");
+        if (_options.FirebaseApiKey != null)
+            _log.Ok("HE THONG", $"Xác thực: Firebase (API key {ServerLogger.Mask(_options.FirebaseApiKey)})");
+        else
+            _log.Warn("HE THONG", "Chưa có FIREBASE_API_KEY -> đăng ký/đăng nhập/quên mật khẩu sẽ bị từ chối (AUTH_UNAVAILABLE)");
+        if (_options.AllowAnonymous)
+            _log.Warn("HE THONG", "Chế độ --dev: cho phép HELLO chỉ bằng tên, KHÔNG xác thực. Đừng dùng khi chạy thật.");
 
         _ = AcceptLoopAsync(_listener, _cts.Token);
         _ = WatchdogLoopAsync(_cts.Token);
@@ -42,7 +59,7 @@ public sealed class GameServer
         _listener?.Stop();
         _listener = null;
         foreach (var c in _connections.Values) c.Close();
-        Log?.Invoke("Server đã dừng");
+        _log.Info("HE THONG", "Server đã dừng");
     }
 
     async Task AcceptLoopAsync(TcpListener listener, CancellationToken ct)
@@ -64,7 +81,7 @@ public sealed class GameServer
         tcp.NoDelay = true;
         var conn = new Connection(tcp);
         _connections[conn.Id] = conn;
-        Log?.Invoke($"+ {conn.RemoteEndPoint}");
+        _log.Info("KET NOI", $"+ {conn.RemoteEndPoint} (đang mở: {_connections.Count})");
         try
         {
             await conn.RunAsync(_dispatcher.Handle, ct);
@@ -73,24 +90,32 @@ public sealed class GameServer
         {
             _connections.TryRemove(conn.Id, out _);
             OnClosed(conn);
-            Log?.Invoke($"- {conn.RemoteEndPoint}");
+            _log.Info("KET NOI", $"- {conn.RemoteEndPoint} (đang mở: {_connections.Count})");
         }
     }
 
-    /// <summary>Mất kết nối: đẩy ConnectionLost vào phòng (không xóa người chơi ngay, còn ân hạn).</summary>
+    /// <summary>Một kết nối đóng: đẩy ConnectionLost vào phòng (không xóa người chơi ngay, còn ân hạn).</summary>
     void OnClosed(Connection conn)
     {
         var s = conn.Session;
-        if (s == null) return;
-        if (!ReferenceEquals(s.Conn, conn)) return;       // đã nối lại bằng kết nối khác
+        if (s == null) return;                              // chưa đăng nhập hoặc đã đăng xuất
+        if (!ReferenceEquals(s.Conn, conn)) return;         // đã nối lại bằng kết nối khác
 
         s.Conn = null;
         var room = _rooms.FindByPlayer(s.PlayerId);
-        if (room == null) { _sessions.Remove(s); return; }  // không ở phòng nào thì không có gì để nối lại
+        if (room == null)
+        {
+            // Không ở phòng nào: không có gì để nối lại -> thu hồi token luôn
+            _log.Info("PHIEN", $"\"{s.PlayerName}\" ngắt kết nối khi không ở phòng (không đăng xuất)");
+            _sessions.Remove(s, "mất kết nối khi không ở phòng");
+            return;
+        }
+
+        _log.Warn("PHIEN", $"\"{s.PlayerName}\" mất kết nối khi ở phòng {room.Code}: giữ token {ServerLogger.Mask(s.ResumeToken)} để nối lại");
         room.Inbox.Writer.TryWrite(new ConnectionLost(s.PlayerId));
     }
 
-    /// <summary>45 giây không có khung hợp lệ thì đóng kết nối (mục 4).</summary>
+    /// <summary>45 giây không có khung hợp lệ thì đóng kết nối (mục 4). Cũng dọn token hết hạn.</summary>
     async Task WatchdogLoopAsync(CancellationToken ct)
     {
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
@@ -103,10 +128,11 @@ public sealed class GameServer
                 {
                     if (c.LastSeenUtc < limit)
                     {
-                        Log?.Invoke($"! {c.RemoteEndPoint} quá {Protocol.DeadAfterSeconds}s không hoạt động");
+                        _log.Warn("KET NOI", $"{c.RemoteEndPoint} quá {Protocol.DeadAfterSeconds}s không hoạt động -> đóng");
                         c.Close();
                     }
                 }
+                _sessions.PurgeExpired();
             }
         }
         catch (OperationCanceledException) { }

@@ -242,7 +242,8 @@ public partial class AuthForm : Form
         {
             if (_currentMode == AuthMode.ForgotPassword)
             {
-                var resetRes = await _firebaseAuth.SendPasswordResetEmailAsync(email);
+                // Quên mật khẩu đi qua Game Server: server nhờ Firebase gửi mail và ghi nhật ký
+                var resetRes = await _tcpService.ForgotPasswordAsync(email);
                 if (resetRes.Success)
                     ShowSuccess(resetRes.Message);
                 else
@@ -264,6 +265,11 @@ public partial class AuthForm : Form
                     ShowError("Vui lòng nhập tên hiển thị.");
                     return;
                 }
+                if (username.Length > 20)
+                {
+                    ShowError("Tên hiển thị tối đa 20 ký tự.");
+                    return;
+                }
                 if (password != _txtConfirmPassword.Text)
                 {
                     ShowError("Mật khẩu xác nhận không khớp.");
@@ -277,8 +283,8 @@ public partial class AuthForm : Form
                     return;
                 }
 
-                ShowSuccess("Đăng ký thành công! Đang đăng nhập vào sảnh chờ...");
-                await CompleteServerLoginAndOpenLobbyAsync(signUpRes.IdToken!, email, username);
+                ShowSuccess("Đã tạo tài khoản. Đang đăng ký với Game Server...");
+                await CompleteServerLoginAndOpenLobbyAsync(signUpRes.IdToken!, email, username, isRegistration: true);
                 return;
             }
 
@@ -298,12 +304,14 @@ public partial class AuthForm : Form
         }
     }
 
-    private async Task CompleteServerLoginAndOpenLobbyAsync(string idToken, string email, string? displayName)
+    private async Task CompleteServerLoginAndOpenLobbyAsync(string idToken, string email, string? displayName, bool isRegistration = false)
     {
-        var serverRes = await _tcpService.AuthenticateWithServerAsync(idToken, email, displayName);
+        var serverRes = await _tcpService.AuthenticateWithServerAsync(idToken, email, displayName, isRegistration);
         if (!serverRes.Success || serverRes.Account == null)
         {
-            ShowError(serverRes.Message);
+            ShowError(isRegistration
+                ? serverRes.Message + " (Tài khoản Firebase đã được tạo, bạn có thể thử Đăng nhập lại.)"
+                : serverRes.Message);
             return;
         }
 

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "TicketToRide.Server": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "FIREBASE_API_KEY": "AIzaSyDMLO2ZNCVTSVHSJruyu711JkI3Vr4Anzc"
+      }
+    }
+  }
+}

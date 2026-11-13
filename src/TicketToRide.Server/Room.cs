@@ -70,6 +70,7 @@ public sealed class Room
             case ClientMessage c: OnClientMessage(c); break;
             case ConnectionLost l: OnConnectionLost(l.PlayerId); break;
             case ConnectionRestored r: OnConnectionRestored(r.PlayerId); break;
+            case MemberLoggedOut o: OnMemberLoggedOut(o.PlayerId); break;
             case TimerFired t: OnTimerFired(t); break;
             case RecoveryConfirm: break; // TODO
         }
@@ -187,6 +188,25 @@ public sealed class Room
         BroadcastConnection(s);
     }
 
+    /// <summary>Người chơi đăng xuất: ở phòng chờ thì rời phòng, đang trong ván thì coi như rời ván.</summary>
+    void OnMemberLoggedOut(string playerId)
+    {
+        var m = Find(playerId);
+        if (m == null) return;
+
+        _graceSeq.Remove(playerId);
+        if (Status == RoomStatus.Lobby)
+        {
+            RemoveMember(m);
+            AfterMemberRemoved();
+        }
+        else
+        {
+            m.Session.State = ConnState.LeftMatch;
+            BroadcastConnection(m.Session);
+        }
+    }
+
     void OnTimerFired(TimerFired t)
     {
         if (!_graceSeq.TryGetValue(t.PlayerId, out var current) || current != t.Seq) return; // đồng hồ đã hủy
@@ -196,7 +216,7 @@ public sealed class Room
         _graceSeq.Remove(t.PlayerId);
         var s = m.Session;
         RemoveMember(m);
-        _sessions.Remove(s);                              // hết ân hạn: thu hồi resumeToken
+        _sessions.Remove(s, $"hết ân hạn {Protocol.LobbyGraceSeconds}s ở phòng {Code}");   // hết ân hạn: thu hồi resumeToken
         AfterMemberRemoved();
     }
 
@@ -242,7 +262,7 @@ public sealed class Room
         foreach (var m in _members.ToList())
         {
             _manager.Unbind(m.Session);
-            if (m.Session.Conn == null) _sessions.Remove(m.Session);
+            if (m.Session.Conn == null) _sessions.Remove(m.Session, $"phòng {Code} đã đóng");
         }
         _members.Clear();
         _graceSeq.Clear();

@@ -32,6 +32,8 @@ public sealed class GameClient : IDisposable
     string? _playerName;
 
     public string? PlayerId { get; private set; }
+    public string? PlayerName { get; private set; }
+    public DateTime? TokenExpiresUtc { get; private set; }
     public string? ResumeToken { get; private set; }
 
     /// <summary>Thông điệp server chủ động gửi (ROOM_UPDATED, PLAYER_CONNECTION, ...). Chạy trên UI thread nếu có.</summary>
@@ -54,6 +56,67 @@ public sealed class GameClient : IDisposable
                 ?? throw new InvalidDataException("Phản hồi HELLO không hợp lệ");
         PlayerId = w.PlayerId;
         ResumeToken = w.ResumeToken;
+        PlayerName = playerName;
+    }
+
+    // ------------------------------------------------------------ xác thực (Firebase idToken -> token phiên của server)
+
+    /// <summary>Mở kết nối TCP nhưng chưa đăng nhập. Sau đó gọi LoginAsync / RegisterAsync / ForgotPasswordAsync.</summary>
+    public async Task ConnectAnonymousAsync(string host, int port)
+    {
+        _host = host;
+        _port = port;
+        await OpenAsync();
+    }
+
+    /// <summary>Đăng nhập bằng idToken của Firebase. Server xác minh rồi cấp token phiên (ResumeToken).</summary>
+    public async Task<WelcomePayload> LoginAsync(string firebaseIdToken) =>
+        ApplyWelcome(await RequestAsync(MessageTypes.AuthLogin, new AuthLoginPayload(firebaseIdToken), 20_000));
+
+    /// <summary>Đăng ký hồ sơ trên server (sau khi đã tạo tài khoản Firebase) và đăng nhập luôn.</summary>
+    public async Task<WelcomePayload> RegisterAsync(string firebaseIdToken, string username) =>
+        ApplyWelcome(await RequestAsync(MessageTypes.AuthRegister, new AuthRegisterPayload(firebaseIdToken, username), 20_000));
+
+    /// <summary>Nhờ server gửi email đặt lại mật khẩu. Không cần đăng nhập. Trả về thông báo của server.</summary>
+    public async Task<string> ForgotPasswordAsync(string email)
+    {
+        var r = await RequestAsync(MessageTypes.AuthForgot, new AuthForgotPayload(email), 20_000);
+        return r.ReadPayload<AuthAckPayload>()?.Message ?? "Đã gửi email đặt lại mật khẩu.";
+    }
+
+    /// <summary>Vào lại bằng token phiên đã lưu (không cần Firebase). Bị từ chối (RESUME_REJECTED / TOKEN_EXPIRED) nếu token đã bị thu hồi hoặc hết hạn.</summary>
+    public async Task ResumeAsync(string host, int port, string resumeToken)
+    {
+        _host = host;
+        _port = port;
+        await OpenAsync();
+        ApplyWelcome(await RequestAsync(MessageTypes.Hello, new HelloPayload(_playerName, resumeToken, null)));
+    }
+
+    /// <summary>Đăng xuất: server thu hồi token phiên, sau đó đóng kết nối.</summary>
+    public async Task LogoutAsync()
+    {
+        try { await RequestAsync(MessageTypes.AuthLogout); }
+        finally
+        {
+            PlayerId = null;
+            PlayerName = null;
+            ResumeToken = null;
+            TokenExpiresUtc = null;
+            Close();
+        }
+    }
+
+    WelcomePayload ApplyWelcome(Message reply)
+    {
+        var w = reply.ReadPayload<WelcomePayload>()
+                ?? throw new InvalidDataException("Phản hồi đăng nhập không hợp lệ");
+        PlayerId = w.PlayerId;
+        ResumeToken = w.ResumeToken;
+        PlayerName = w.PlayerName ?? _playerName;
+        _playerName = PlayerName;
+        TokenExpiresUtc = w.ExpiresInSeconds is int s ? DateTime.UtcNow.AddSeconds(s) : null;
+        return w;
     }
 
     /// <summary>Nối lại bằng resumeToken sau khi mất kết nối. Server sẽ gửi lại ROOM_UPDATED (hoặc GAME_SNAPSHOT).</summary>
