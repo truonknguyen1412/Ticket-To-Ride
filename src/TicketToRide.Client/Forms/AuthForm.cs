@@ -6,7 +6,6 @@ namespace TicketToRide.Client.Forms;
 public partial class AuthForm : Form
 {
     private readonly FirebaseAuthService _firebaseAuth = new();
-    private readonly TcpClientService _tcpService = new();
 
     private Panel _cardPanel = null!;
     private Label _lblTitle = null!;
@@ -271,14 +270,14 @@ public partial class AuthForm : Form
                 }
 
                 var signUpRes = await _firebaseAuth.SignUpAsync(username, email, password);
-                if (!signUpRes.Success)
+                if (!signUpRes.Success || string.IsNullOrEmpty(signUpRes.IdToken))
                 {
                     ShowError(signUpRes.Message);
                     return;
                 }
 
-                ShowSuccess("Đăng ký thành công! Đang đăng nhập vào sảnh chờ...");
-                await CompleteServerLoginAndOpenLobbyAsync(signUpRes.IdToken!, email, username);
+                ShowSuccess("Đăng ký thành công! Đang vào sảnh chờ...");
+                OpenLobbyAfterAuth(signUpRes, email, username);
                 return;
             }
 
@@ -290,7 +289,7 @@ public partial class AuthForm : Form
                 return;
             }
 
-            await CompleteServerLoginAndOpenLobbyAsync(signInRes.IdToken, email, signInRes.DisplayName);
+            OpenLobbyAfterAuth(signInRes, email, signInRes.DisplayName);
         }
         finally
         {
@@ -298,22 +297,20 @@ public partial class AuthForm : Form
         }
     }
 
-    private async Task CompleteServerLoginAndOpenLobbyAsync(string idToken, string email, string? displayName)
+    private void OpenLobbyAfterAuth(FirebaseAuthResult authResult, string email, string? displayName)
     {
-        var serverRes = await _tcpService.AuthenticateWithServerAsync(idToken, email, displayName);
-        if (!serverRes.Success || serverRes.Account == null)
-        {
-            ShowError(serverRes.Message);
-            return;
-        }
+        // Lưu phiên xác thực Firebase và ID Token lên RAM Client
+        SessionManager.Uid = authResult.Uid;
+        SessionManager.FirebaseIdToken = authResult.IdToken;
+        SessionManager.Email = authResult.Email ?? email;
+        SessionManager.DisplayName = !string.IsNullOrWhiteSpace(displayName)
+            ? displayName
+            : email.Split('@')[0];
 
-        SessionManager.FirebaseIdToken = idToken;
-        SessionManager.Email = email;
-        SessionManager.CurrentAccount = serverRes.Account;
-        SessionManager.SessionId = serverRes.SessionId;
+        // TODO (Bước 4 - 5): Sau khi dựng Server và gắn ClientCore, gọi GameClient.ConnectAsync(host, port, displayName, idToken) tại đây
 
         Hide();
-        using var lobbyForm = new LobbyForm(_tcpService);
+        using var lobbyForm = new LobbyForm();
         var dialogResult = lobbyForm.ShowDialog();
 
         // Nếu người dùng bấm Đăng xuất -> quay lại màn hình đăng nhập; nếu bấm X -> thoát hẳn ứng dụng

@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using TicketToRide.Shared.Enums;
 
-namespace TicketToRide.Shared.Protocol;
+namespace TicketToRide.Shared.Models;
 
 public class GameAction
 {

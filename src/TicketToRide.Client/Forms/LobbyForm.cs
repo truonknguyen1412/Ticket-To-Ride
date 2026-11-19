@@ -5,11 +5,10 @@ namespace TicketToRide.Client.Forms;
 
 public partial class LobbyForm : Form
 {
-    private readonly TcpClientService _tcpService;
+    private readonly FirebaseAuthService _firebaseAuth = new();
 
-    public LobbyForm(TcpClientService tcpService)
+    public LobbyForm()
     {
-        _tcpService = tcpService;
         InitializeComponent();
         SetupCustomUi();
     }
@@ -59,7 +58,7 @@ public partial class LobbyForm : Form
             AutoEllipsis = true
         };
 
-        var username = SessionManager.CurrentAccount?.Username ?? "Người chơi";
+        var username = SessionManager.DisplayName ?? "Người chơi";
         var email = SessionManager.Email ?? "";
         var lblUserInfo = new Label
         {
@@ -85,7 +84,7 @@ public partial class LobbyForm : Form
             Cursor = Cursors.Hand
         };
         btnLogout.FlatAppearance.BorderSize = 0;
-        btnLogout.Click += async (_, _) => await HandleLogoutAsync(btnLogout);
+        btnLogout.Click += (_, _) => HandleLogout(btnLogout);
 
         headerLayout.Controls.Add(lblGameTitle, 0, 0);
         headerLayout.Controls.Add(lblUserInfo, 1, 0);
@@ -123,7 +122,7 @@ public partial class LobbyForm : Form
         Controls.Add(headerPanel);
     }
 
-    private async Task HandleLogoutAsync(Button btnLogout)
+    private void HandleLogout(Button btnLogout)
     {
         var confirm = MessageBox.Show(
             "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản hiện tại?",
@@ -135,8 +134,7 @@ public partial class LobbyForm : Form
             return;
 
         btnLogout.Enabled = false;
-        await _tcpService.LogoutAsync();
-        SessionManager.Clear();
+        _firebaseAuth.SignOut();
 
         // Trả về DialogResult.Retry để AuthForm biết là thao tác Đăng xuất
         DialogResult = DialogResult.Retry;

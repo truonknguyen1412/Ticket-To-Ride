@@ -1,21 +1,21 @@
-﻿using TicketToRide.Shared.Models;
-
-namespace TicketToRide.Client.Utils;
+﻿namespace TicketToRide.Client.Utils;
 
 public static class SessionManager
 {
-    public static Account? CurrentAccount { get; set; }
+    public static string? Uid { get; set; }
     public static string? Email { get; set; }
+    public static string? DisplayName { get; set; }
     public static string? FirebaseIdToken { get; set; }
-    public static String? SessionId { get; set; }
+    public static string? ResumeToken { get; set; }
 
-    public static bool IsLoggedIn => CurrentAccount != null && !string.IsNullOrEmpty(FirebaseIdToken);
+    public static bool IsAuthenticated => !string.IsNullOrEmpty(FirebaseIdToken);
 
     public static void Clear()
     {
-        CurrentAccount = null;
+        Uid = null;
         Email = null;
+        DisplayName = null;
         FirebaseIdToken = null;
-        SessionId = null;
+        ResumeToken = null;
     }
 }

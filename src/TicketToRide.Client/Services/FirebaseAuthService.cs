@@ -1,19 +1,25 @@
 ﻿using System.Net.Http.Json;
 using System.Text.Json;
+using TicketToRide.Client.Config;
+using TicketToRide.Client.Utils;
 
 namespace TicketToRide.Client.Services;
 
-public record FirebaseAuthResult(bool Success, string Message, string? IdToken = null, string? Email = null, string? DisplayName = null);
+public record FirebaseAuthResult(
+    bool Success,
+    string Message,
+    string? Uid = null,
+    string? IdToken = null,
+    string? Email = null,
+    string? DisplayName = null);
 
 public class FirebaseAuthService
 {
-   
-    private const string ApiKey = "AIzaSyDMLO2ZNCVTSVHSJruyu711JkI3Vr4Anzc";
     private static readonly HttpClient _http = new();
 
     public async Task<FirebaseAuthResult> SignInAsync(string email, string password)
     {
-        var url = $"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={ApiKey}";
+        var url = $"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FirebaseConfig.ApiKey}";
         var payload = new { email, password, returnSecureToken = true };
 
         return await SendAuthRequestAsync(url, payload);
@@ -21,7 +27,7 @@ public class FirebaseAuthService
 
     public async Task<FirebaseAuthResult> SignUpAsync(string username, string email, string password)
     {
-        var url = $"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={ApiKey}";
+        var url = $"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FirebaseConfig.ApiKey}";
         var payload = new { email, password, returnSecureToken = true };
 
         var result = await SendAuthRequestAsync(url, payload);
@@ -29,7 +35,7 @@ public class FirebaseAuthService
             return result;
 
         // Cập nhật tên hiển thị (Username) lên hồ sơ Firebase
-        var updateUrl = $"https://identitytoolkit.googleapis.com/v1/accounts:update?key={ApiKey}";
+        var updateUrl = $"https://identitytoolkit.googleapis.com/v1/accounts:update?key={FirebaseConfig.ApiKey}";
         var updatePayload = new { idToken = result.IdToken, displayName = username, returnSecureToken = true };
         await _http.PostAsJsonAsync(updateUrl, updatePayload);
 
@@ -38,7 +44,7 @@ public class FirebaseAuthService
 
     public async Task<FirebaseAuthResult> SendPasswordResetEmailAsync(string email)
     {
-        var url = $"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={ApiKey}";
+        var url = $"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={FirebaseConfig.ApiKey}";
         var payload = new { requestType = "PASSWORD_RESET", email };
 
         try
@@ -57,6 +63,11 @@ public class FirebaseAuthService
         }
     }
 
+    public void SignOut()
+    {
+        SessionManager.Clear();
+    }
+
     private static async Task<FirebaseAuthResult> SendAuthRequestAsync(string url, object payload)
     {
         try
@@ -70,11 +81,12 @@ public class FirebaseAuthService
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
+            var uid = root.TryGetProperty("localId", out var idProp) ? idProp.GetString() : null;
             var idToken = root.GetProperty("idToken").GetString();
             var email = root.GetProperty("email").GetString();
             var displayName = root.TryGetProperty("displayName", out var dn) ? dn.GetString() : null;
 
-            return new FirebaseAuthResult(true, "Thành công", idToken, email, displayName);
+            return new FirebaseAuthResult(true, "Thành công", uid, idToken, email, displayName);
         }
         catch (Exception ex)
         {
