@@ -82,6 +82,7 @@ public static class ErrorCodes
     public const string Cooldown = "COOLDOWN";
     public const string SessionReplaced = "SESSION_REPLACED";    // tài khoản đăng nhập ở nơi khác
     public const string AuthUnavailable = "AUTH_UNAVAILABLE";    // server chưa cấu hình/không gọi được Firebase
+    public const string DbUnavailable = "DB_UNAVAILABLE";        // server không truy cập được SQL Server
 }
 
 /// <summary>Giá trị trên đường truyền. RECOVERING/CLOSED là nội bộ, không gửi cho client.</summary>

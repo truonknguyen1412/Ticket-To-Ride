@@ -24,7 +24,7 @@ public sealed class GameServer
         _log = log;
         _sessions = new SessionManager(log);
         _rooms = new RoomManager(_sessions);
-        _accounts = new AccountStore(options.AccountsFile);
+        _accounts = new AccountStore(options.SqlConnectionString);
 
         IIdentityProvider? idp = options.FirebaseApiKey != null ? new FirebaseIdentityProvider(options.FirebaseApiKey) : null;
         var auth = new AuthService(_sessions, _rooms, _accounts, idp, log);
@@ -40,7 +40,17 @@ public sealed class GameServer
         _listener.Start();
 
         _log.Ok("HE THONG", $"Server lắng nghe cổng {_options.Port}");
-        _log.Info("HE THONG", $"Tài khoản đã biết: {_accounts.Count} (file {_accounts.FilePath})");
+        try
+        {
+            _accounts.Initialize();
+            _log.Ok("HE THONG", $"{_accounts.Description}: bảng Accounts đang có {_accounts.Count()} tài khoản");
+        }
+        catch (Exception ex)
+        {
+            _log.Error("HE THONG", $"Không kết nối được {_accounts.Description}: {ex.Message}");
+            _log.Warn("HE THONG", "Đăng ký/đăng nhập sẽ bị từ chối (DB_UNAVAILABLE) cho tới khi SQL Server chạy được. " +
+                                  "Kiểm tra chuỗi kết nối (--sql=... hoặc biến SQLSERVER_CONNECTION) hoặc chạy docs/sql/tao-bang-accounts.sql trong SSMS.");
+        }
         _log.Info("HE THONG", $"Token phiên: sống {Protocol.TokenLifetimeHours} giờ, gia hạn khi nối lại hoặc nhận PING; sai xác thực {Protocol.MaxAuthFailures} lần thì đóng kết nối");
         if (_options.FirebaseApiKey != null)
             _log.Ok("HE THONG", $"Xác thực: Firebase (API key {ServerLogger.Mask(_options.FirebaseApiKey)})");

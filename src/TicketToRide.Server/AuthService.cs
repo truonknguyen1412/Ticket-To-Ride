@@ -51,12 +51,23 @@ public sealed class AuthService
         var user = await VerifyAsync(conn, msg, TagReg, p?.IdToken);
         if (user == null) return;
 
-        if (!_accounts.TryCreate(user.Uid, user.Email, username, out var account))
+        AccountRecord account;
+        try
         {
-            Fail(conn, msg, TagReg, ErrorCodes.AccountExists, "Tài khoản đã được đăng ký trên server, hãy đăng nhập");
+            var (created, record) = await _accounts.TryCreateAsync(user.Uid, user.Email, username);
+            if (!created)
+            {
+                Fail(conn, msg, TagReg, ErrorCodes.AccountExists, "Tài khoản đã được đăng ký trên server, hãy đăng nhập");
+                return;
+            }
+            account = record;
+        }
+        catch (Exception ex)
+        {
+            FailDb(conn, msg, TagReg, ex);
             return;
         }
-        _log.Step(TagReg, $"Đã lưu hồ sơ: \"{account.Username}\" <{account.Email}> uid={user.Uid}. Tổng tài khoản: {_accounts.Count}");
+        _log.Step(TagReg, $"Đã lưu hồ sơ vào SQL Server (bảng Accounts): \"{account.Username}\" <{account.Email}> uid={user.Uid}");
 
         var session = Establish(conn, account);
         conn.AuthFailures = 0;
@@ -74,7 +85,17 @@ public sealed class AuthService
         var user = await VerifyAsync(conn, msg, TagLogin, p?.IdToken);
         if (user == null) return;
 
-        var account = _accounts.RecordLogin(user.Uid, user.Email, PickName(user), out var created);
+        AccountRecord account;
+        bool created;
+        try
+        {
+            (account, created) = await _accounts.RecordLoginAsync(user.Uid, user.Email, PickName(user));
+        }
+        catch (Exception ex)
+        {
+            FailDb(conn, msg, TagLogin, ex);
+            return;
+        }
         if (created)
             _log.Warn(TagLogin, $"uid={user.Uid} chưa có hồ sơ trên server (tạo trực tiếp ở Firebase) -> tự tạo hồ sơ \"{account.Username}\"");
 
@@ -235,6 +256,14 @@ public sealed class AuthService
             _log.Warn(tag, $"{conn.RemoteEndPoint} thất bại {conn.AuthFailures} lần liên tiếp -> đóng kết nối");
             _ = Task.Delay(300).ContinueWith(_ => conn.Close(), TaskScheduler.Default);
         }
+    }
+
+    /// <summary>SQL Server lỗi/không kết nối được: báo client, không tính vào số lần sai xác thực.</summary>
+    void FailDb(Connection conn, Message msg, string tag, Exception ex)
+    {
+        _log.Error(tag, $"Lỗi SQL Server: {ex.Message}");
+        Fail(conn, msg, tag, ErrorCodes.DbUnavailable,
+            "Server không truy cập được cơ sở dữ liệu SQL Server, hãy báo người chạy server", countFailure: false);
     }
 
     static string PickName(IdentityUser u)
