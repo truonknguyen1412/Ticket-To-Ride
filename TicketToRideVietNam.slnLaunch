@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "src\\TicketToRide.Client\\TicketToRide.Client.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\TicketToRide.Server\\TicketToRide.Server.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

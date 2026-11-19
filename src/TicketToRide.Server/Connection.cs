@@ -34,6 +34,10 @@ public sealed class Connection
     public string RemoteEndPoint { get; }
     public Session? Session { get; set; }
     public DateTime LastSeenUtc => new(Interlocked.Read(ref _lastSeenTicks), DateTimeKind.Utc);
+    public bool IsClosed => Volatile.Read(ref _closed) == 1;
+
+    /// <summary>Số lần xác thực thất bại liên tiếp trên kết nối này (chống dò mật khẩu/token).</summary>
+    public int AuthFailures { get; set; }
 
     /// <summary>Đẩy một khung vào hàng đợi ghi. Phòng chỉ gọi hàm này, không ghi thẳng vào socket.</summary>
     public bool Enqueue(string frame)
@@ -44,7 +48,7 @@ public sealed class Connection
         return false;
     }
 
-    public async Task RunAsync(Action<Connection, string> onFrame, CancellationToken ct)
+    public async Task RunAsync(Func<Connection, string, Task> onFrame, CancellationToken ct)
     {
         var writer = WriteLoopAsync(ct);
         await ReadLoopAsync(onFrame, ct);
@@ -52,7 +56,7 @@ public sealed class Connection
         await writer;
     }
 
-    async Task ReadLoopAsync(Action<Connection, string> onFrame, CancellationToken ct)
+    async Task ReadLoopAsync(Func<Connection, string, Task> onFrame, CancellationToken ct)
     {
         try
         {
@@ -61,7 +65,7 @@ public sealed class Connection
                 var json = await Framing.ReadAsync(_stream, ct);
                 if (json == null) break;
                 Interlocked.Exchange(ref _lastSeenTicks, DateTime.UtcNow.Ticks);
-                onFrame(this, json);
+                await onFrame(this, json);      // chờ xong mới đọc khung kế tiếp -> giữ đúng thứ tự
             }
         }
         catch (Exception)

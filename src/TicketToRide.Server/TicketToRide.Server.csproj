@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.6" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\TicketToRide.Shared\TicketToRide.Shared.csproj" />
   </ItemGroup>
 

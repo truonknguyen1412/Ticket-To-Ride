@@ -6,6 +6,7 @@ namespace TicketToRide.Client.Forms;
 public partial class AuthForm : Form
 {
     private readonly FirebaseAuthService _firebaseAuth = new();
+    private readonly TcpClientService _tcpService = new();
 
     private Panel _cardPanel = null!;
     private Label _lblTitle = null!;
@@ -241,7 +242,8 @@ public partial class AuthForm : Form
         {
             if (_currentMode == AuthMode.ForgotPassword)
             {
-                var resetRes = await _firebaseAuth.SendPasswordResetEmailAsync(email);
+                // Quên mật khẩu đi qua Game Server: server nhờ Firebase gửi mail và ghi nhật ký
+                var resetRes = await _tcpService.ForgotPasswordAsync(email);
                 if (resetRes.Success)
                     ShowSuccess(resetRes.Message);
                 else
@@ -263,6 +265,11 @@ public partial class AuthForm : Form
                     ShowError("Vui lòng nhập tên hiển thị.");
                     return;
                 }
+                if (username.Length > 20)
+                {
+                    ShowError("Tên hiển thị tối đa 20 ký tự.");
+                    return;
+                }
                 if (password != _txtConfirmPassword.Text)
                 {
                     ShowError("Mật khẩu xác nhận không khớp.");
@@ -270,14 +277,14 @@ public partial class AuthForm : Form
                 }
 
                 var signUpRes = await _firebaseAuth.SignUpAsync(username, email, password);
-                if (!signUpRes.Success || string.IsNullOrEmpty(signUpRes.IdToken))
+                if (!signUpRes.Success)
                 {
                     ShowError(signUpRes.Message);
                     return;
                 }
 
-                ShowSuccess("Đăng ký thành công! Đang vào sảnh chờ...");
-                OpenLobbyAfterAuth(signUpRes, email, username);
+                ShowSuccess("Đã tạo tài khoản. Đang đăng ký với Game Server...");
+                await CompleteServerLoginAndOpenLobbyAsync(signUpRes.IdToken!, email, username, isRegistration: true);
                 return;
             }
 
@@ -289,7 +296,7 @@ public partial class AuthForm : Form
                 return;
             }
 
-            OpenLobbyAfterAuth(signInRes, email, signInRes.DisplayName);
+            await CompleteServerLoginAndOpenLobbyAsync(signInRes.IdToken, email, signInRes.DisplayName);
         }
         finally
         {
@@ -297,20 +304,24 @@ public partial class AuthForm : Form
         }
     }
 
-    private void OpenLobbyAfterAuth(FirebaseAuthResult authResult, string email, string? displayName)
+    private async Task CompleteServerLoginAndOpenLobbyAsync(string idToken, string email, string? displayName, bool isRegistration = false)
     {
-        // Lưu phiên xác thực Firebase và ID Token lên RAM Client
-        SessionManager.Uid = authResult.Uid;
-        SessionManager.FirebaseIdToken = authResult.IdToken;
-        SessionManager.Email = authResult.Email ?? email;
-        SessionManager.DisplayName = !string.IsNullOrWhiteSpace(displayName)
-            ? displayName
-            : email.Split('@')[0];
+        var serverRes = await _tcpService.AuthenticateWithServerAsync(idToken, email, displayName, isRegistration);
+        if (!serverRes.Success || serverRes.Account == null)
+        {
+            ShowError(isRegistration
+                ? serverRes.Message + " (Tài khoản Firebase đã được tạo, bạn có thể thử Đăng nhập lại.)"
+                : serverRes.Message);
+            return;
+        }
 
-        // TODO (Bước 4 - 5): Sau khi dựng Server và gắn ClientCore, gọi GameClient.ConnectAsync(host, port, displayName, idToken) tại đây
+        SessionManager.FirebaseIdToken = idToken;
+        SessionManager.Email = email;
+        SessionManager.CurrentAccount = serverRes.Account;
+        SessionManager.SessionId = serverRes.SessionId;
 
         Hide();
-        using var lobbyForm = new LobbyForm();
+        using var lobbyForm = new LobbyForm(_tcpService);
         var dialogResult = lobbyForm.ShowDialog();
 
         // Nếu người dùng bấm Đăng xuất -> quay lại màn hình đăng nhập; nếu bấm X -> thoát hẳn ứng dụng
