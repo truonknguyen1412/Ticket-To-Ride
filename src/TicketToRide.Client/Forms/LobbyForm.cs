@@ -11,12 +11,17 @@ public partial class LobbyForm : Form
     private readonly FirebaseAuthService _firebaseAuth = new();
     private GameClient? _client;
 
-    // Bảng màu Indochine Heritage
-    private readonly Color _bgCream = ColorTranslator.FromHtml("#FDFBF7");
-    private readonly Color _emeraldTeal = ColorTranslator.FromHtml("#1A362B");
-    private readonly Color _terracottaRed = ColorTranslator.FromHtml("#C85A42");
-    private readonly Color _goldText = ColorTranslator.FromHtml("#F3D58D");
-    private readonly Color _forestGreen = ColorTranslator.FromHtml("#2E6F40");
+
+    // Bảng màu Ticket to Ride Vietnam
+    private readonly Color _bgCream = Theme.Cream;
+    private readonly Color _paper = Theme.Paper;
+    private readonly Color _paperDark = Theme.PaperDark;
+    private readonly Color _navy = Theme.Navy;
+    private readonly Color _red = Theme.Red;
+    private readonly Color _gold = Theme.Gold;
+    private readonly Color _goldLight = Theme.GoldLight;
+    private readonly Color _forestGreen = Color.ForestGreen;
+
 
     // Khu vực ngoài phòng (Tạo / Tham gia phòng)
     private Panel _entryPanel = null!;
@@ -52,89 +57,200 @@ public partial class LobbyForm : Form
     private void SetupCustomUi()
     {
         Text = "Ticket to Ride Vietnam - Sảnh Chờ";
-        Size = new Size(920, 580);
-        MinimumSize = new Size(780, 500);
+        Size = new Size(1280, 820);
+        MinimumSize = new Size(1000, 700);
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = _bgCream;
         Font = new Font("Segoe UI", 10F);
 
-        // 1. Thanh Header trên cùng
+        Color gold = Color.FromArgb(232, 187, 55);
+        Color cream = Color.FromArgb(245, 235, 211);
+        Color navy = Color.FromArgb(27, 45, 69);
+
+        // ================= HEADER =================
         var headerPanel = new Panel
         {
             Dock = DockStyle.Top,
-            Height = 68,
-            BackColor = _emeraldTeal,
-            Padding = new Padding(20, 0, 20, 0)
+            Height = 132,
+            BackColor = navy,
+            Padding = new Padding(42, 12, 42, 10)
         };
 
         var headerLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 2,
+            RowCount = 1,
+            BackColor = Color.Transparent
+        };
+
+        headerLayout.ColumnStyles.Add(
+            new ColumnStyle(SizeType.Percent, 64F));
+        headerLayout.ColumnStyles.Add(
+            new ColumnStyle(SizeType.Percent, 36F));
+
+        // Phần trái: tên game và dải màu
+        var titlePanel = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.Transparent
+        };
+
+        var lblGameTitle = new Label
+        {
+            Text = "TICKET TO RIDE VIỆT NAM",
+            Font = new Font("Georgia", 25F, FontStyle.Bold),
+            ForeColor = Color.White,
+            Dock = DockStyle.Top,
+            Height = 62,
+            TextAlign = ContentAlignment.MiddleLeft,
+            AutoEllipsis = true
+        };
+
+        var colorStrip = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 34,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            BackColor = Color.Transparent,
+            Padding = new Padding(0, 2, 0, 0)
+        };
+
+        Color[] trainColors =
+        {
+        Color.FromArgb(190, 54, 48),
+        Color.FromArgb(48, 105, 166),
+        Color.FromArgb(43, 119, 82),
+        Color.FromArgb(232, 187, 55),
+        Color.FromArgb(53, 39, 29),
+        Color.FromArgb(255, 250, 238),
+        Color.FromArgb(224, 119, 43),
+        Color.FromArgb(204, 133, 164)
+    };
+
+        foreach (Color trainColor in trainColors)
+        {
+            colorStrip.Controls.Add(new Panel
+            {
+                Size = new Size(55, 25),
+                BackColor = trainColor,
+                Margin = new Padding(0, 0, 12, 0),
+                BorderStyle = BorderStyle.FixedSingle
+            });
+        }
+
+        titlePanel.Controls.Add(colorStrip);
+        titlePanel.Controls.Add(lblGameTitle);
+
+        // Phần phải: thông tin tài khoản
+        var userPanel = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 3,
             RowCount = 1,
             BackColor = Color.Transparent
         };
-        headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 
-        var lblGameTitle = new Label
+        userPanel.ColumnStyles.Add(
+            new ColumnStyle(SizeType.Percent, 100F));
+        userPanel.ColumnStyles.Add(
+            new ColumnStyle(SizeType.Absolute, 68F));
+        userPanel.ColumnStyles.Add(
+            new ColumnStyle(SizeType.Absolute, 145F));
+
+        string username = SessionManager.DisplayName ?? "Người chơi";
+
+        var userInfoPanel = new Panel
         {
-            Text = "TICKET TO RIDE VIETNAM — SẢNH CHỜ",
-            ForeColor = _goldText,
-            Font = new Font("Segoe UI", 12.5F, FontStyle.Bold),
             Dock = DockStyle.Fill,
-            TextAlign = ContentAlignment.MiddleLeft,
-            AutoEllipsis = true
+            BackColor = Color.Transparent
         };
 
-        var username = SessionManager.DisplayName ?? "Người chơi";
-        var email = SessionManager.Email ?? "";
-        var lblUserInfo = new Label
+        var lblUsername = new Label
         {
-            Text = $"Xin chào, {username} ({email})",
+            Text = username,
+            Font = new Font("Segoe UI", 12F, FontStyle.Bold),
             ForeColor = Color.White,
-            Font = new Font("Segoe UI", 9.5F),
-            AutoSize = true,
+            Dock = DockStyle.Bottom,
+            Height = 30,
+            TextAlign = ContentAlignment.MiddleRight
+        };
+
+        var lblRank = new Label
+        {
+            Text = "Hạng: Chưa xếp hạng",
+            Font = new Font("Segoe UI", 10F),
+            ForeColor = gold,
+            Dock = DockStyle.Bottom,
+            Height = 30,
+            TextAlign = ContentAlignment.MiddleRight
+        };
+
+        userInfoPanel.Controls.Add(lblRank);
+        userInfoPanel.Controls.Add(lblUsername);
+
+        var lblAvatar = new Label
+        {
+            Text = string.IsNullOrWhiteSpace(username)
+                ? "?"
+                : username.Substring(0, 1).ToUpper(),
+            Font = new Font("Georgia", 23F, FontStyle.Bold),
+            ForeColor = Color.White,
+            BackColor = Color.FromArgb(45, 91, 70),
+            TextAlign = ContentAlignment.MiddleCenter,
             Dock = DockStyle.Fill,
-            TextAlign = ContentAlignment.MiddleRight,
-            Margin = new Padding(10, 0, 18, 0)
+            Margin = new Padding(5)
         };
 
         var btnLogout = new Button
         {
             Text = "Đăng xuất",
-            BackColor = _terracottaRed,
+            BackColor = navy,
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat,
-            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-            AutoSize = true,
-            Padding = new Padding(14, 6, 14, 6),
-            Anchor = AnchorStyles.None,
-            Cursor = Cursors.Hand
+            Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+            Dock = DockStyle.Fill,
+            Cursor = Cursors.Hand,
+            Margin = new Padding(8, 20, 0, 20)
         };
-        btnLogout.FlatAppearance.BorderSize = 0;
-        btnLogout.Click += async (_, _) => await HandleLogoutAsync(btnLogout);
 
-        headerLayout.Controls.Add(lblGameTitle, 0, 0);
-        headerLayout.Controls.Add(lblUserInfo, 1, 0);
-        headerLayout.Controls.Add(btnLogout, 2, 0);
+        btnLogout.FlatAppearance.BorderColor = Color.White;
+        btnLogout.FlatAppearance.BorderSize = 2;
+        btnLogout.Click += async (_, _) =>
+            await HandleLogoutAsync(btnLogout);
+
+        userPanel.Controls.Add(userInfoPanel, 0, 0);
+        userPanel.Controls.Add(lblAvatar, 1, 0);
+        userPanel.Controls.Add(btnLogout, 2, 0);
+
+        headerLayout.Controls.Add(titlePanel, 0, 0);
+        headerLayout.Controls.Add(userPanel, 1, 0);
+
+        var headerAccent = new Panel
+        {
+            Dock = DockStyle.Bottom,
+            Height = 5,
+            BackColor = gold
+        };
+
         headerPanel.Controls.Add(headerLayout);
+        headerPanel.Controls.Add(headerAccent);
 
-        // 2. Thanh trạng thái dưới cùng
+        // ================= FOOTER =================
         var footerPanel = new Panel
         {
             Dock = DockStyle.Bottom,
-            Height = 44,
-            BackColor = Color.FromArgb(242, 238, 229),
-            Padding = new Padding(24, 6, 24, 6)
+            Height = 54,
+            BackColor = navy,
+            Padding = new Padding(28, 6, 28, 6)
         };
 
         _lblStatus = new Label
         {
-            Text = "Sẵn sàng. Hãy tạo phòng mới hoặc nhập mã phòng 6 chữ số để tham gia.",
-            ForeColor = _emeraldTeal,
-            Font = new Font("Segoe UI", 9.5F),
+            Text = "Sẵn sàng. Chọn chế độ chơi để tiếp tục.",
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 10F),
             Dock = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleLeft
         };
@@ -142,44 +258,38 @@ public partial class LobbyForm : Form
         _btnReconnect = new Button
         {
             Text = "Kết nối lại",
-            BackColor = _emeraldTeal,
-            ForeColor = Color.White,
+            BackColor = gold,
+            ForeColor = navy,
             FlatStyle = FlatStyle.Flat,
             Font = new Font("Segoe UI", 9F, FontStyle.Bold),
             Dock = DockStyle.Right,
-            Width = 110,
+            Width = 120,
             Visible = false,
             Cursor = Cursors.Hand
         };
+
         _btnReconnect.FlatAppearance.BorderSize = 0;
-        _btnReconnect.Click += async (_, _) => await HandleReconnectAsync();
+        _btnReconnect.Click += async (_, _) =>
+            await HandleReconnectAsync();
 
         footerPanel.Controls.Add(_lblStatus);
         footerPanel.Controls.Add(_btnReconnect);
 
-        // 3. Khu vực thân Sảnh chờ
+        // ================= BODY =================
         var bodyWrapper = new Panel
         {
             Dock = DockStyle.Fill,
-            Padding = new Padding(24)
-        };
-
-        var centerCard = new Panel
-        {
-            Dock = DockStyle.Fill,
-            BackColor = Color.White,
-            BorderStyle = BorderStyle.FixedSingle,
-            Padding = new Padding(28)
+            Padding = new Padding(28, 24, 28, 18),
+            BackColor = cream
         };
 
         BuildEntryPanel();
         BuildRoomPanel();
 
-        centerCard.Controls.Add(_entryPanel);
-        centerCard.Controls.Add(_roomPanel);
-        bodyWrapper.Controls.Add(centerCard);
+        bodyWrapper.Controls.Add(_entryPanel);
+        bodyWrapper.Controls.Add(_roomPanel);
 
-        // Thứ tự Add: Fill -> Bottom -> Top
+        // Thứ tự thêm control để Dock hoạt động đúng
         Controls.Add(bodyWrapper);
         Controls.Add(footerPanel);
         Controls.Add(headerPanel);
@@ -187,7 +297,12 @@ public partial class LobbyForm : Form
 
     private void BuildEntryPanel()
     {
-        _entryPanel = new Panel { Dock = DockStyle.Fill };
+        _entryPanel = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = _bgCream,
+            Padding = new Padding(12)
+        };
 
         var layout = new TableLayoutPanel
         {
@@ -204,7 +319,7 @@ public partial class LobbyForm : Form
             Dock = DockStyle.Fill,
             Margin = new Padding(10),
             Padding = new Padding(24),
-            BackColor = _bgCream,
+            BackColor = _paper,
             BorderStyle = BorderStyle.FixedSingle
         };
 
@@ -212,7 +327,7 @@ public partial class LobbyForm : Form
         {
             Text = "TẠO PHÒNG MỚI",
             Font = new Font("Segoe UI", 13F, FontStyle.Bold),
-            ForeColor = _emeraldTeal,
+            ForeColor = _navy,
             Dock = DockStyle.Top,
             Height = 36,
             TextAlign = ContentAlignment.MiddleCenter
@@ -231,8 +346,8 @@ public partial class LobbyForm : Form
         _btnCreateRoom = new Button
         {
             Text = "+ Tạo phòng ngay",
-            BackColor = _emeraldTeal,
-            ForeColor = _goldText,
+            BackColor = _navy,
+            ForeColor = _goldLight,
             FlatStyle = FlatStyle.Flat,
             Font = new Font("Segoe UI", 11F, FontStyle.Bold),
             Height = 44,
@@ -252,7 +367,7 @@ public partial class LobbyForm : Form
             Dock = DockStyle.Fill,
             Margin = new Padding(10),
             Padding = new Padding(24),
-            BackColor = _bgCream,
+            BackColor = _paper,
             BorderStyle = BorderStyle.FixedSingle
         };
 
@@ -260,7 +375,7 @@ public partial class LobbyForm : Form
         {
             Text = "THAM GIA PHÒNG",
             Font = new Font("Segoe UI", 13F, FontStyle.Bold),
-            ForeColor = _emeraldTeal,
+            ForeColor = _navy,
             Dock = DockStyle.Top,
             Height = 36,
             TextAlign = ContentAlignment.MiddleCenter
@@ -298,7 +413,7 @@ public partial class LobbyForm : Form
         _btnJoinRoom = new Button
         {
             Text = "Vào phòng",
-            BackColor = _terracottaRed,
+            BackColor = _red,
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat,
             Font = new Font("Segoe UI", 11F, FontStyle.Bold),
@@ -322,14 +437,20 @@ public partial class LobbyForm : Form
 
     private void BuildRoomPanel()
     {
-        _roomPanel = new Panel { Dock = DockStyle.Fill, Visible = false };
+        _roomPanel = new Panel
+        {
+            Dock = DockStyle.Fill,
+            Visible = false,
+            BackColor = _bgCream,
+            Padding = new Padding(12)
+        };
 
         // Hàng thông tin mã phòng trên cùng
         var topBar = new Panel
         {
             Dock = DockStyle.Top,
             Height = 56,
-            BackColor = _bgCream,
+            BackColor = _navy,
             Padding = new Padding(14, 8, 14, 8)
         };
 
@@ -337,7 +458,7 @@ public partial class LobbyForm : Form
         {
             Text = "MÃ PHÒNG:",
             Font = new Font("Segoe UI", 10.5F, FontStyle.Bold),
-            ForeColor = _emeraldTeal,
+            ForeColor = _goldLight,
             AutoSize = true,
             Dock = DockStyle.Left,
             TextAlign = ContentAlignment.MiddleLeft
@@ -347,7 +468,7 @@ public partial class LobbyForm : Form
         {
             Text = "------",
             Font = new Font("Consolas", 16F, FontStyle.Bold),
-            ForeColor = _terracottaRed,
+            ForeColor = _red,
             AutoSize = true,
             Dock = DockStyle.Left,
             Padding = new Padding(8, 0, 14, 0),
@@ -358,7 +479,7 @@ public partial class LobbyForm : Form
         {
             Text = "Sao chép mã",
             BackColor = Color.White,
-            ForeColor = _emeraldTeal,
+            ForeColor = _navy,
             FlatStyle = FlatStyle.Flat,
             Font = new Font("Segoe UI", 9F, FontStyle.Bold),
             AutoSize = true,
@@ -378,7 +499,7 @@ public partial class LobbyForm : Form
         {
             Text = "Đang chờ người chơi...",
             Font = new Font("Segoe UI", 9.5F, FontStyle.Italic),
-            ForeColor = Color.DimGray,
+            ForeColor = _paper,
             Dock = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleRight
         };
@@ -396,7 +517,10 @@ public partial class LobbyForm : Form
             FullRowSelect = true,
             GridLines = true,
             Font = new Font("Segoe UI", 10.5F),
-            HeaderStyle = ColumnHeaderStyle.Nonclickable
+            HeaderStyle = ColumnHeaderStyle.Nonclickable,
+            BackColor = _paper,
+            ForeColor = _navy,
+            BorderStyle = BorderStyle.FixedSingle,
         };
         _lvMembers.Columns.Add("STT", 60, HorizontalAlignment.Center);
         _lvMembers.Columns.Add("Tên người chơi", 280, HorizontalAlignment.Left);
@@ -409,7 +533,8 @@ public partial class LobbyForm : Form
         {
             Dock = DockStyle.Bottom,
             Height = 56,
-            Padding = new Padding(0, 12, 0, 0)
+            Padding = new Padding(0, 12, 0, 0),
+            BackColor = _bgCream,
         };
 
         _btnLeaveRoom = new Button
@@ -429,8 +554,8 @@ public partial class LobbyForm : Form
         _btnStartGame = new Button
         {
             Text = "Bắt đầu ván đấu",
-            BackColor = _emeraldTeal,
-            ForeColor = _goldText,
+            BackColor = _navy,
+            ForeColor = _goldLight,
             FlatStyle = FlatStyle.Flat,
             Font = new Font("Segoe UI", 10.5F, FontStyle.Bold),
             Width = 190,
@@ -776,7 +901,7 @@ public partial class LobbyForm : Form
     private void SetStatus(string text, bool isError)
     {
         _lblStatus.Text = text;
-        _lblStatus.ForeColor = isError ? Color.Firebrick : _emeraldTeal;
+        _lblStatus.ForeColor = isError ? Color.Firebrick : _navy;
     }
 
     private async Task HandleLogoutAsync(Button btnLogout)

@@ -6,6 +6,8 @@ using TicketToRide.Shared.Net;
 
 namespace TicketToRide.Client.Forms;
 
+using TicketToRide.Client.Controls;
+
 public partial class AuthForm : Form
 {
     private readonly FirebaseAuthService _firebaseAuth = new();
@@ -38,196 +40,402 @@ public partial class AuthForm : Form
         SwitchMode(AuthMode.Login);
     }
 
+
     private void SetupCustomUi()
     {
-        Text = "Ticket to Ride Vietnam - Xác thực tài khoản";
-        Size = new Size(460, 560);
+        // Kích thước cửa sổ
+        Text = "Ticket to Ride Vietnam - Xác thực";
+        ClientSize = new Size(960, 1020);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
-        BackColor = Color.FromArgb(240, 244, 248);
+        BackColor = Color.FromArgb(244, 233, 208);
         Font = new Font("Segoe UI", 10F);
+
+        Color navy = Color.FromArgb(27, 42, 65);
+        Color gold = Color.FromArgb(201, 150, 45);
+        Color red = Color.FromArgb(195, 54, 54);
+        Color green = Color.FromArgb(37, 74, 58);
+        Color paper = Color.FromArgb(255, 251, 240);
+        Color darkText = Color.FromArgb(55, 42, 32);
+
+        // =========================
+        // 1. HEADER - BẢNG HIỆU GAME
+        // =========================
+
+        Panel header = new Panel
+        {
+            Location = new Point(0, 0),
+            Size = new Size(960, 320),
+            BackColor = navy
+        };
+
+        Label lblJourney = new Label
+        {
+            Text = "BẮC - NAM  ·  MỘT HÀNH TRÌNH",
+            Font = new Font("Segoe UI", 14F, FontStyle.Bold),
+            ForeColor = gold,
+            Size = new Size(900, 35),
+            Location = new Point(30, 45),
+            TextAlign = ContentAlignment.MiddleCenter
+        };
+
+        Label lblGameTitle = new Label
+        {
+            Text = "TICKET TO RIDE",
+            Font = new Font("Georgia", 43F, FontStyle.Bold),
+            ForeColor = paper,
+            Size = new Size(900, 75),
+            Location = new Point(30, 90),
+            TextAlign = ContentAlignment.MiddleCenter
+        };
+
+        Label lblCountry = new Label
+        {
+            Text = "V I Ệ T  N A M",
+            Font = new Font("Georgia", 25F),
+            ForeColor = gold,
+            Size = new Size(900, 50),
+            Location = new Point(30, 165),
+            TextAlign = ContentAlignment.MiddleCenter
+        };
+
+        header.Controls.AddRange(new Control[]
+        {
+        lblJourney,
+        lblGameTitle,
+        lblCountry
+        });
+
+        // Các màu toa tàu trang trí
+        Color[] trainColors =
+        {
+        Color.FromArgb(195, 54, 54),
+        Color.FromArgb(45, 105, 170),
+        Color.FromArgb(39, 131, 74),
+        Color.FromArgb(231, 195, 65),
+        Color.FromArgb(55, 42, 32),
+        Color.FromArgb(255, 251, 240),
+        Color.FromArgb(226, 125, 45),
+        Color.FromArgb(205, 130, 165)
+    };
+
+        int startX = 95;
+
+        foreach (Color trainColor in trainColors)
+        {
+            Panel trainCar = new Panel
+            {
+                Size = new Size(78, 34),
+                Location = new Point(startX, 245),
+                BackColor = trainColor,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            header.Controls.Add(trainCar);
+            startX += 96;
+        }
+
+        Controls.Add(header);
+
+        // =========================
+        // 2. ĐƯỜNG VIỀN VÀNG
+        // =========================
+
+        Panel goldLine = new Panel
+        {
+            Location = new Point(0, 320),
+            Size = new Size(960, 7),
+            BackColor = gold
+        };
+
+        Controls.Add(goldLine);
+
+        // =========================
+        // 3. CARD ĐĂNG NHẬP
+        // =========================
 
         _cardPanel = new Panel
         {
-            Size = new Size(380, 460),
-            Location = new Point(32, 30),
-            BackColor = Color.White,
+            Size = new Size(800, 590),
+            Location = new Point(80, 355),
+            BackColor = paper,
             BorderStyle = BorderStyle.FixedSingle
         };
+
         Controls.Add(_cardPanel);
 
         _lblTitle = new Label
         {
             Text = "ĐĂNG NHẬP",
-            Font = new Font("Segoe UI", 16F, FontStyle.Bold),
-            ForeColor = Color.FromArgb(25, 55, 109),
-            AutoSize = false,
-            Size = new Size(340, 36),
-            Location = new Point(20, 20),
+            Font = new Font("Georgia", 27F, FontStyle.Bold),
+            ForeColor = darkText,
+            Size = new Size(700, 55),
+            Location = new Point(50, 25),
             TextAlign = ContentAlignment.MiddleCenter
         };
 
         _lblSubtitle = new Label
         {
-            Text = "Chào mừng đến với Ticket to Ride Vietnam",
-            Font = new Font("Segoe UI", 9F),
-            ForeColor = Color.Gray,
-            AutoSize = false,
-            Size = new Size(340, 22),
-            Location = new Point(20, 56),
+            Text = "Đăng nhập để vào sảnh chờ Ticket to Ride",
+            Font = new Font("Segoe UI", 15F),
+            ForeColor = Color.FromArgb(105, 85, 65),
+            Size = new Size(700, 35),
+            Location = new Point(50, 85),
             TextAlign = ContentAlignment.MiddleCenter
         };
 
-        _lblUsername = new Label { Text = "Tên hiển thị (Username):", Location = new Point(25, 90), AutoSize = true };
-        _txtUsername = new TextBox { Location = new Point(25, 113), Size = new Size(325, 28) };
+        _lblUsername = new Label
+        {
+            Text = "Tên hiển thị",
+            Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+            ForeColor = darkText,
+            AutoSize = true
+        };
 
-        _lblEmail = new Label { Text = "Email:", Location = new Point(25, 90), AutoSize = true };
-        _txtEmail = new TextBox { Location = new Point(25, 113), Size = new Size(325, 28) };
+        _txtUsername = new TextBox
+        {
+            Size = new Size(660, 38),
+            Font = new Font("Segoe UI", 13F),
+            BorderStyle = BorderStyle.FixedSingle
+        };
 
-        _lblPassword = new Label { Text = "Mật khẩu:", Location = new Point(25, 150), AutoSize = true };
-        _txtPassword = new TextBox { Location = new Point(25, 173), Size = new Size(325, 28), UseSystemPasswordChar = true };
+        _lblEmail = new Label
+        {
+            Text = "Email",
+            Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+            ForeColor = darkText,
+            AutoSize = true
+        };
 
-        _lblConfirmPassword = new Label { Text = "Nhập lại mật khẩu:", Location = new Point(25, 270), AutoSize = true };
-        _txtConfirmPassword = new TextBox { Location = new Point(25, 293), Size = new Size(325, 28), UseSystemPasswordChar = true };
+        _txtEmail = new TextBox
+        {
+            Size = new Size(660, 38),
+            Font = new Font("Segoe UI", 13F),
+            BorderStyle = BorderStyle.FixedSingle
+        };
+
+        _lblPassword = new Label
+        {
+            Text = "Mật khẩu",
+            Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+            ForeColor = darkText,
+            AutoSize = true
+        };
+
+        _txtPassword = new TextBox
+        {
+            Size = new Size(660, 38),
+            Font = new Font("Segoe UI", 13F),
+            BorderStyle = BorderStyle.FixedSingle,
+            UseSystemPasswordChar = true
+        };
+
+        _lblConfirmPassword = new Label
+        {
+            Text = "Nhập lại mật khẩu",
+            Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+            ForeColor = darkText,
+            AutoSize = true
+        };
+
+        _txtConfirmPassword = new TextBox
+        {
+            Size = new Size(660, 38),
+            Font = new Font("Segoe UI", 13F),
+            BorderStyle = BorderStyle.FixedSingle,
+            UseSystemPasswordChar = true
+        };
 
         _btnPrimary = new Button
         {
-            Text = "Đăng nhập",
-            BackColor = Color.FromArgb(25, 55, 109),
+            Text = "ĐĂNG NHẬP",
+            Size = new Size(660, 62),
+            BackColor = red,
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat,
-            Font = new Font("Segoe UI", 10.5F, FontStyle.Bold),
-            Size = new Size(325, 38),
-            Location = new Point(25, 225),
+            Font = new Font("Georgia", 17F, FontStyle.Bold),
             Cursor = Cursors.Hand
         };
-        _btnPrimary.FlatAppearance.BorderSize = 0;
+
+        _btnPrimary.FlatAppearance.BorderSize = 2;
+        _btnPrimary.FlatAppearance.BorderColor = darkText;
         _btnPrimary.Click += async (_, _) => await HandlePrimaryActionAsync();
 
         _lblStatus = new Label
         {
             Text = "",
+            Font = new Font("Segoe UI", 10F),
             ForeColor = Color.Firebrick,
-            Font = new Font("Segoe UI", 9F),
-            AutoSize = false,
-            Size = new Size(325, 42),
-            Location = new Point(25, 272),
-            TextAlign = ContentAlignment.TopCenter
+            Size = new Size(660, 45),
+            TextAlign = ContentAlignment.MiddleCenter
         };
 
         _lnkForgotPassword = new LinkLabel
         {
             Text = "Quên mật khẩu?",
-            AutoSize = true,
-            Location = new Point(25, 325),
-            LinkColor = Color.FromArgb(25, 55, 109)
+            Font = new Font("Segoe UI", 13F),
+            LinkColor = green,
+            AutoSize = true
         };
-        _lnkForgotPassword.Click += (_, _) => SwitchMode(AuthMode.ForgotPassword);
+
+        _lnkForgotPassword.Click += (_, _) =>
+            SwitchMode(AuthMode.ForgotPassword);
 
         _lnkSwitchMode = new LinkLabel
         {
             Text = "Chưa có tài khoản? Đăng ký ngay",
-            AutoSize = true,
-            Location = new Point(25, 355),
-            LinkColor = Color.FromArgb(25, 55, 109)
+            Font = new Font("Segoe UI", 13F),
+            LinkColor = green,
+            AutoSize = true
         };
+
         _lnkSwitchMode.Click += (_, _) =>
         {
-            SwitchMode(_currentMode == AuthMode.Login ? AuthMode.Register : AuthMode.Login);
+            SwitchMode(
+                _currentMode == AuthMode.Login
+                    ? AuthMode.Register
+                    : AuthMode.Login
+            );
         };
 
         _cardPanel.Controls.AddRange(new Control[]
         {
-            _lblTitle, _lblSubtitle,
-            _lblUsername, _txtUsername,
-            _lblEmail, _txtEmail,
-            _lblPassword, _txtPassword,
-            _lblConfirmPassword, _txtConfirmPassword,
-            _btnPrimary, _lblStatus,
-            _lnkForgotPassword, _lnkSwitchMode
+        _lblTitle,
+        _lblSubtitle,
+        _lblUsername,
+        _txtUsername,
+        _lblEmail,
+        _txtEmail,
+        _lblPassword,
+        _txtPassword,
+        _lblConfirmPassword,
+        _txtConfirmPassword,
+        _btnPrimary,
+        _lblStatus,
+        _lnkForgotPassword,
+        _lnkSwitchMode
         });
+
+        // =========================
+        // 4. ĐƯỜNG RAY Ở CHÂN FORM
+        // =========================
+
+        TrackStrip trackStrip = new TrackStrip
+        {
+            Location = new Point(0, 1010),
+            Width = ClientSize.Width,
+            Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
+        };
+
+        Controls.Add(trackStrip);
     }
+
+
 
     private void SwitchMode(AuthMode mode)
     {
         _currentMode = mode;
+
         _lblStatus.Text = "";
         _lblStatus.ForeColor = Color.Firebrick;
+
+        int left = 70;
+        int inputWidth = 660;
+
+        // Ẩn tất cả control trước khi thiết lập chế độ
+        _lblUsername.Visible = false;
+        _txtUsername.Visible = false;
+        _lblEmail.Visible = false;
+        _txtEmail.Visible = false;
+        _lblPassword.Visible = false;
+        _txtPassword.Visible = false;
+        _lblConfirmPassword.Visible = false;
+        _txtConfirmPassword.Visible = false;
+        _lnkForgotPassword.Visible = false;
 
         if (mode == AuthMode.Login)
         {
             _lblTitle.Text = "ĐĂNG NHẬP";
             _lblSubtitle.Text = "Đăng nhập để vào sảnh chờ Ticket to Ride";
 
-            _lblUsername.Visible = _txtUsername.Visible = false;
             _lblEmail.Visible = _txtEmail.Visible = true;
             _lblPassword.Visible = _txtPassword.Visible = true;
-            _lblConfirmPassword.Visible = _txtConfirmPassword.Visible = false;
 
-            _lblEmail.Location = new Point(25, 95);
-            _txtEmail.Location = new Point(25, 118);
-            _lblPassword.Location = new Point(25, 155);
-            _txtPassword.Location = new Point(25, 178);
+            _lblEmail.Location = new Point(left, 155);
+            _txtEmail.Location = new Point(left, 185);
+            _txtEmail.Width = inputWidth;
 
-            _btnPrimary.Text = "Đăng nhập";
-            _btnPrimary.Location = new Point(25, 225);
-            _lblStatus.Location = new Point(25, 272);
+            _lblPassword.Location = new Point(left, 250);
+            _txtPassword.Location = new Point(left, 280);
+            _txtPassword.Width = inputWidth;
+
+            _btnPrimary.Text = "ĐĂNG NHẬP";
+            _btnPrimary.Location = new Point(left, 345);
+
+            _lblStatus.Location = new Point(left, 415);
 
             _lnkForgotPassword.Visible = true;
-            _lnkForgotPassword.Location = new Point(25, 325);
+            _lnkForgotPassword.Location = new Point(left, 485);
+
             _lnkSwitchMode.Text = "Chưa có tài khoản? Đăng ký ngay";
-            _lnkSwitchMode.Location = new Point(25, 355);
+            _lnkSwitchMode.Location = new Point(410, 485);
         }
         else if (mode == AuthMode.Register)
         {
             _lblTitle.Text = "ĐĂNG KÝ TÀI KHOẢN";
-            _lblSubtitle.Text = "Tạo tài khoản mới qua Firebase Authentication";
+            _lblSubtitle.Text = "Bắt đầu hành trình của bạn tại Việt Nam";
 
             _lblUsername.Visible = _txtUsername.Visible = true;
             _lblEmail.Visible = _txtEmail.Visible = true;
             _lblPassword.Visible = _txtPassword.Visible = true;
             _lblConfirmPassword.Visible = _txtConfirmPassword.Visible = true;
 
-            _lblUsername.Location = new Point(25, 88);
-            _txtUsername.Location = new Point(25, 110);
-            _lblEmail.Location = new Point(25, 145);
-            _txtEmail.Location = new Point(25, 167);
-            _lblPassword.Location = new Point(25, 202);
-            _txtPassword.Location = new Point(25, 224);
-            _lblConfirmPassword.Location = new Point(25, 259);
-            _txtConfirmPassword.Location = new Point(25, 281);
+            _lblUsername.Location = new Point(left, 120);
+            _txtUsername.Location = new Point(left, 148);
+            _txtUsername.Width = inputWidth;
 
-            _btnPrimary.Text = "Đăng ký";
-            _btnPrimary.Location = new Point(25, 322);
-            _lblStatus.Location = new Point(25, 368);
+            _lblEmail.Location = new Point(left, 190);
+            _txtEmail.Location = new Point(left, 218);
+            _txtEmail.Width = inputWidth;
 
-            _lnkForgotPassword.Visible = false;
+            _lblPassword.Location = new Point(left, 260);
+            _txtPassword.Location = new Point(left, 288);
+            _txtPassword.Width = inputWidth;
+
+            _lblConfirmPassword.Location = new Point(left, 330);
+            _txtConfirmPassword.Location = new Point(left, 358);
+            _txtConfirmPassword.Width = inputWidth;
+
+            _btnPrimary.Text = "ĐĂNG KÝ";
+            _btnPrimary.Location = new Point(left, 425);
+
+            _lblStatus.Location = new Point(left, 490);
+
             _lnkSwitchMode.Text = "Đã có tài khoản? Quay lại đăng nhập";
-            _lnkSwitchMode.Location = new Point(25, 415);
+            _lnkSwitchMode.Location = new Point(left, 545);
         }
         else
         {
             _lblTitle.Text = "QUÊN MẬT KHẨU";
             _lblSubtitle.Text = "Nhập email đã đăng ký để nhận link khôi phục";
 
-            _lblUsername.Visible = _txtUsername.Visible = false;
             _lblEmail.Visible = _txtEmail.Visible = true;
-            _lblPassword.Visible = _txtPassword.Visible = false;
-            _lblConfirmPassword.Visible = _txtConfirmPassword.Visible = false;
 
-            _lblEmail.Location = new Point(25, 105);
-            _txtEmail.Location = new Point(25, 128);
+            _lblEmail.Location = new Point(left, 180);
+            _txtEmail.Location = new Point(left, 210);
+            _txtEmail.Width = inputWidth;
 
-            _btnPrimary.Text = "Gửi email đặt lại mật khẩu";
-            _btnPrimary.Location = new Point(25, 175);
-            _lblStatus.Location = new Point(25, 225);
+            _btnPrimary.Text = "GỬI EMAIL ĐẶT LẠI MẬT KHẨU";
+            _btnPrimary.Location = new Point(left, 280);
 
-            _lnkForgotPassword.Visible = false;
+            _lblStatus.Location = new Point(left, 360);
+
             _lnkSwitchMode.Text = "Quay lại màn hình đăng nhập";
-            _lnkSwitchMode.Location = new Point(25, 285);
+            _lnkSwitchMode.Location = new Point(left, 440);
         }
     }
+
 
     private async Task HandlePrimaryActionAsync()
     {

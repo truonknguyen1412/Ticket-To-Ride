@@ -12,7 +12,7 @@ public sealed class ServerOptions
 
     /// <summary>Chuỗi kết nối SQL Server mặc định: LocalDB đi kèm Visual Studio, đăng nhập bằng tài khoản Windows.</summary>
     public const string DefaultSqlConnection =
-        @"Server=(localdb)\MSSQLLocalDB;Database=TicketToRide;Integrated Security=True;TrustServerCertificate=True;";
+    @"Server=localhost;Database=TicketToRideVietNam;Integrated Security=True;TrustServerCertificate=True;";
 
     /// <summary>Chuỗi kết nối SQL Server để lưu hồ sơ tài khoản (bảng dbo.Accounts). Đổi bằng --sql=... hoặc biến SQLSERVER_CONNECTION.</summary>
     public string SqlConnectionString { get; init; } = DefaultSqlConnection;
