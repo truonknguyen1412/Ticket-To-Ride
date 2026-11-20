@@ -1,12 +1,15 @@
-﻿using TicketToRide.Client.Services;
+﻿using TicketToRide.Client.Config;
+using TicketToRide.Client.Services;
 using TicketToRide.Client.Utils;
+using TicketToRide.ClientCore;
+using TicketToRide.Shared.Net;
 
 namespace TicketToRide.Client.Forms;
 
 public partial class AuthForm : Form
 {
     private readonly FirebaseAuthService _firebaseAuth = new();
-    private readonly TcpClientService _tcpService = new();
+    private GameClient _gameClient;
 
     private Panel _cardPanel = null!;
     private Label _lblTitle = null!;
@@ -30,6 +33,7 @@ public partial class AuthForm : Form
     public AuthForm()
     {
         InitializeComponent();
+        _gameClient = new GameClient(); // Tạo sau InitializeComponent để nhận UI SynchronizationContext
         SetupCustomUi();
         SwitchMode(AuthMode.Login);
     }
@@ -202,7 +206,7 @@ public partial class AuthForm : Form
             _lnkSwitchMode.Text = "Đã có tài khoản? Quay lại đăng nhập";
             _lnkSwitchMode.Location = new Point(25, 415);
         }
-        else // ForgotPassword
+        else
         {
             _lblTitle.Text = "QUÊN MẬT KHẨU";
             _lblSubtitle.Text = "Nhập email đã đăng ký để nhận link khôi phục";
@@ -242,12 +246,10 @@ public partial class AuthForm : Form
         {
             if (_currentMode == AuthMode.ForgotPassword)
             {
-                // Quên mật khẩu đi qua Game Server: server nhờ Firebase gửi mail và ghi nhật ký
-                var resetRes = await _tcpService.ForgotPasswordAsync(email);
-                if (resetRes.Success)
-                    ShowSuccess(resetRes.Message);
-                else
-                    ShowError(resetRes.Message);
+                await _gameClient.ConnectAnonymousAsync(FirebaseConfig.ServerHost, FirebaseConfig.ServerPort);
+                var message = await _gameClient.ForgotPasswordAsync(email);
+                await _gameClient.DisconnectAsync();
+                ShowSuccess(message);
                 return;
             }
 
@@ -277,18 +279,17 @@ public partial class AuthForm : Form
                 }
 
                 var signUpRes = await _firebaseAuth.SignUpAsync(username, email, password);
-                if (!signUpRes.Success)
+                if (!signUpRes.Success || string.IsNullOrEmpty(signUpRes.IdToken))
                 {
                     ShowError(signUpRes.Message);
                     return;
                 }
 
                 ShowSuccess("Đã tạo tài khoản. Đang đăng ký với Game Server...");
-                await CompleteServerLoginAndOpenLobbyAsync(signUpRes.IdToken!, email, username, isRegistration: true);
+                await CompleteServerAuthAndOpenLobbyAsync(signUpRes.IdToken, email, username, isRegistration: true);
                 return;
             }
 
-            // Chế độ Login
             var signInRes = await _firebaseAuth.SignInAsync(email, password);
             if (!signInRes.Success || string.IsNullOrEmpty(signInRes.IdToken))
             {
@@ -296,7 +297,15 @@ public partial class AuthForm : Form
                 return;
             }
 
-            await CompleteServerLoginAndOpenLobbyAsync(signInRes.IdToken, email, signInRes.DisplayName);
+            await CompleteServerAuthAndOpenLobbyAsync(signInRes.IdToken, email, signInRes.DisplayName, isRegistration: false);
+        }
+        catch (ServerErrorException ex)
+        {
+            ShowError(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            ShowError($"Không thể kết nối tới Game Server: {ex.Message}");
         }
         finally
         {
@@ -304,37 +313,45 @@ public partial class AuthForm : Form
         }
     }
 
-    private async Task CompleteServerLoginAndOpenLobbyAsync(string idToken, string email, string? displayName, bool isRegistration = false)
+    private async Task CompleteServerAuthAndOpenLobbyAsync(string idToken, string email, string? displayName, bool isRegistration)
     {
-        var serverRes = await _tcpService.AuthenticateWithServerAsync(idToken, email, displayName, isRegistration);
-        if (!serverRes.Success || serverRes.Account == null)
+        try
+        {
+            await _gameClient.ConnectAnonymousAsync(FirebaseConfig.ServerHost, FirebaseConfig.ServerPort);
+            WelcomePayload welcome = isRegistration
+                ? await _gameClient.RegisterAsync(idToken, displayName!)
+                : await _gameClient.LoginAsync(idToken);
+
+            SessionManager.Client = _gameClient;
+            SessionManager.Uid = welcome.PlayerId;
+            SessionManager.DisplayName = welcome.PlayerName ?? displayName ?? email;
+            SessionManager.Email = email;
+            SessionManager.FirebaseIdToken = idToken;
+            SessionManager.ResumeToken = welcome.ResumeToken;
+
+            Hide();
+            using var lobbyForm = new LobbyForm();
+            var dialogResult = lobbyForm.ShowDialog();
+
+            if (dialogResult == DialogResult.Retry)
+            {
+                _gameClient = new GameClient();
+                _txtPassword.Clear();
+                _txtConfirmPassword.Clear();
+                SwitchMode(AuthMode.Login);
+                Show();
+            }
+            else
+            {
+                await _gameClient.DisconnectAsync();
+                Close();
+            }
+        }
+        catch (ServerErrorException ex)
         {
             ShowError(isRegistration
-                ? serverRes.Message + " (Tài khoản Firebase đã được tạo, bạn có thể thử Đăng nhập lại.)"
-                : serverRes.Message);
-            return;
-        }
-
-        SessionManager.FirebaseIdToken = idToken;
-        SessionManager.Email = email;
-        SessionManager.CurrentAccount = serverRes.Account;
-        SessionManager.SessionId = serverRes.SessionId;
-
-        Hide();
-        using var lobbyForm = new LobbyForm(_tcpService);
-        var dialogResult = lobbyForm.ShowDialog();
-
-        // Nếu người dùng bấm Đăng xuất -> quay lại màn hình đăng nhập; nếu bấm X -> thoát hẳn ứng dụng
-        if (dialogResult == DialogResult.Retry)
-        {
-            _txtPassword.Clear();
-            _txtConfirmPassword.Clear();
-            SwitchMode(AuthMode.Login);
-            Show();
-        }
-        else
-        {
-            Close();
+                ? $"{ex.Message} (Tài khoản Firebase đã được tạo, bạn có thể thử Đăng nhập lại.)"
+                : ex.Message);
         }
     }
 

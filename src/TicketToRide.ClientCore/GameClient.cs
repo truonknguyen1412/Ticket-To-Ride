@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 using TicketToRide.Shared;
+using TicketToRide.Shared.Models;
 using TicketToRide.Shared.Net;
 
 namespace TicketToRide.ClientCore;
@@ -42,6 +43,12 @@ public sealed class GameClient : IDisposable
     /// <summary>Mất kết nối ngoài ý muốn (không bắn khi tự gọi DisconnectAsync/Dispose).</summary>
     public event Action<string>? Disconnected;
 
+    static string GetClientMapVersion()
+    {
+        try { return MapData.Load().MapVersion; }
+        catch { return "1.0"; }
+    }
+
     // ------------------------------------------------------------ kết nối
 
     public async Task ConnectAsync(string host, int port, string playerName)
@@ -51,7 +58,7 @@ public sealed class GameClient : IDisposable
         _playerName = playerName;
 
         await OpenAsync();
-        var reply = await RequestAsync(MessageTypes.Hello, new HelloPayload(playerName, null, null));
+        var reply = await RequestAsync(MessageTypes.Hello, new HelloPayload(playerName, null, GetClientMapVersion()));
         var w = reply.ReadPayload<WelcomePayload>()
                 ?? throw new InvalidDataException("Phản hồi HELLO không hợp lệ");
         PlayerId = w.PlayerId;
@@ -90,7 +97,7 @@ public sealed class GameClient : IDisposable
         _host = host;
         _port = port;
         await OpenAsync();
-        ApplyWelcome(await RequestAsync(MessageTypes.Hello, new HelloPayload(_playerName, resumeToken, null)));
+        ApplyWelcome(await RequestAsync(MessageTypes.Hello, new HelloPayload(_playerName, resumeToken, GetClientMapVersion())));
     }
 
     /// <summary>Đăng xuất: server thu hồi token phiên, sau đó đóng kết nối.</summary>
@@ -126,7 +133,7 @@ public sealed class GameClient : IDisposable
             throw new InvalidOperationException("Chưa từng kết nối thành công");
 
         await OpenAsync();
-        await RequestAsync(MessageTypes.Hello, new HelloPayload(_playerName, ResumeToken, null));
+        ApplyWelcome(await RequestAsync(MessageTypes.Hello, new HelloPayload(_playerName, ResumeToken, GetClientMapVersion())));
     }
 
     public async Task DisconnectAsync()
@@ -218,8 +225,8 @@ public sealed class GameClient : IDisposable
 
     public Task LeaveRoomAsync() => RequestAsync(MessageTypes.LeaveRoom);
 
-    /// <summary>Gửi khi phát hiện lệch phiên bản. TODO: tên trường theo tài liệu giao thức.</summary>
-    public Task RequestSyncAsync(int stateVersion) =>
+    /// <summary>Gửi khi phát hiện lệch phiên bản trạng thái ván đấu.</summary>
+    public Task RequestSyncAsync(long stateVersion) =>
         SendAsync(MessageTypes.SyncRequest, new { stateVersion });
 
     // ------------------------------------------------------------ vòng lặp nền
