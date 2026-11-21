@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Drawing.Text;
 
 namespace TicketToRide.Client.Utils;
 
@@ -26,8 +27,29 @@ public static class Theme
         ColorTranslator.FromHtml("#E07B2E"), ColorTranslator.FromHtml("#D98BB0")
     };
 
-    public static Font Title(float size) => new("Georgia", size, FontStyle.Bold);
-    public static Font Body(float size, FontStyle style = FontStyle.Regular) => new("Segoe UI", size, style);
+    private static string Pick(params string[] names)
+    {
+        using var installed = new InstalledFontCollection();
+        var have = installed.Families.Select(f => f.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return names.FirstOrDefault(have.Contains) ?? SystemFonts.DefaultFont.FontFamily.Name;
+    }
+
+    public static readonly string HeadingFamily = Pick("Palatino Linotype", "Georgia", "Times New Roman");
+    public static readonly string BodyFamily = Pick("Segoe UI", "Tahoma", "Arial");
+
+    public static Font Title(float size) => new(HeadingFamily, size, FontStyle.Bold);
+    public static Font Body(float size, FontStyle style = FontStyle.Regular) => new(BodyFamily, size, style);
+
+    /// <summary>Sửa lỗi ngắt dòng giữa từ của tiếng Việt: gọi 1 lần sau khi dựng xong giao diện.</summary>
+    public static void FixTextRendering(Control root)
+    {
+        foreach (Control c in root.Controls)
+        {
+            if (c is Label l) l.UseCompatibleTextRendering = true;
+            else if (c is ButtonBase b) b.UseCompatibleTextRendering = true;
+            FixTextRendering(c);
+        }
+    }
 
     /// <summary>Nút kiểu vé tàu: viền mực 2px, chữ Georgia đậm.</summary>
     public static void StyleButton(Button b, Color back, Color? fore = null)
