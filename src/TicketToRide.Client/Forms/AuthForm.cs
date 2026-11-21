@@ -37,7 +37,11 @@ public partial class AuthForm : Form
         InitializeComponent();
         _gameClient = new GameClient(); // Tạo sau InitializeComponent để nhận UI SynchronizationContext
         SetupCustomUi();
-        SwitchMode(AuthMode.Login);
+		// Đưa các ô nhập lên trên nhãn để nhãn không che đường viền
+		foreach (var t in new[] { _txtUsername, _txtEmail, _txtPassword, _txtConfirmPassword })
+			t.BringToFront();
+		Theme.FixTextRendering(this);
+		SwitchMode(AuthMode.Login);
     }
 
 
@@ -83,7 +87,7 @@ public partial class AuthForm : Form
         Label lblGameTitle = new Label
         {
             Text = "TICKET TO RIDE",
-            Font = new Font("Georgia", 43F, FontStyle.Bold),
+            Font = Theme.Title(43F),
             ForeColor = paper,
             Size = new Size(900, 75),
             Location = new Point(30, 90),
@@ -168,7 +172,7 @@ public partial class AuthForm : Form
         _lblTitle = new Label
         {
             Text = "ĐĂNG NHẬP",
-            Font = new Font("Georgia", 27F, FontStyle.Bold),
+            Font = Theme.Title(27F),
             ForeColor = darkText,
             Size = new Size(700, 55),
             Location = new Point(50, 25),
@@ -254,7 +258,7 @@ public partial class AuthForm : Form
             BackColor = red,
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat,
-            Font = new Font("Georgia", 17F, FontStyle.Bold),
+            Font = Theme.Title(17F),
             Cursor = Cursors.Hand
         };
 

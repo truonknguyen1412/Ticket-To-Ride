@@ -6,10 +6,13 @@ using NetMessage = TicketToRide.Shared.Net.Message;
 
 namespace TicketToRide.Client.Forms;
 
+using TicketToRide.Client.Controls;
+
 public partial class LobbyForm : Form
 {
     private readonly FirebaseAuthService _firebaseAuth = new();
     private GameClient? _client;
+    private readonly ToolTip _tip = new();
 
 
     // Bảng màu Ticket to Ride Vietnam
@@ -41,6 +44,8 @@ public partial class LobbyForm : Form
 
     // Thanh trạng thái & nút nối lại
     private Label _lblStatus = null!;
+    private Panel _footerPanel = null!;
+    private readonly System.Windows.Forms.Timer _statusTimer = new() { Interval = 4000 };
     private Button _btnReconnect = null!;
 
     private string? _currentRoomCode;
@@ -50,6 +55,14 @@ public partial class LobbyForm : Form
     {
         InitializeComponent();
         SetupCustomUi();
+        Theme.FixTextRendering(this);
+
+        _statusTimer.Tick += (_, _) =>
+        {
+            _statusTimer.Stop();
+            if (!_btnReconnect.Visible) _footerPanel.Visible = false;
+        };
+
         BindClientEvents();
         ShowEntryView();
     }
@@ -99,7 +112,7 @@ public partial class LobbyForm : Form
         var lblGameTitle = new Label
         {
             Text = "TICKET TO RIDE VIỆT NAM",
-            Font = new Font("Georgia", 25F, FontStyle.Bold),
+            Font = Theme.Title(25F),
             ForeColor = Color.White,
             Dock = DockStyle.Top,
             Height = 62,
@@ -155,7 +168,7 @@ public partial class LobbyForm : Form
         userPanel.ColumnStyles.Add(
             new ColumnStyle(SizeType.Percent, 100F));
         userPanel.ColumnStyles.Add(
-            new ColumnStyle(SizeType.Absolute, 68F));
+            new ColumnStyle(SizeType.Absolute, 76F));
         userPanel.ColumnStyles.Add(
             new ColumnStyle(SizeType.Absolute, 145F));
 
@@ -190,18 +203,14 @@ public partial class LobbyForm : Form
         userInfoPanel.Controls.Add(lblRank);
         userInfoPanel.Controls.Add(lblUsername);
 
-        var lblAvatar = new Label
+        var avatar = new CircleAvatar
         {
-            Text = string.IsNullOrWhiteSpace(username)
-                ? "?"
-                : username.Substring(0, 1).ToUpper(),
-            Font = new Font("Georgia", 23F, FontStyle.Bold),
-            ForeColor = Color.White,
-            BackColor = Color.FromArgb(45, 91, 70),
-            TextAlign = ContentAlignment.MiddleCenter,
-            Dock = DockStyle.Fill,
-            Margin = new Padding(5)
+            Initial = username,
+            Anchor = AnchorStyles.None,   // tự căn giữa ô, không bị kéo giãn tràn header
+            Margin = new Padding(0)
         };
+        _tip.SetToolTip(avatar, "Hồ sơ, lịch sử trận đấu, hạng và uy tín");
+        avatar.Click += (_, _) => OpenProfile();
 
         var btnLogout = new Button
         {
@@ -221,7 +230,7 @@ public partial class LobbyForm : Form
             await HandleLogoutAsync(btnLogout);
 
         userPanel.Controls.Add(userInfoPanel, 0, 0);
-        userPanel.Controls.Add(lblAvatar, 1, 0);
+        userPanel.Controls.Add(avatar, 1, 0);
         userPanel.Controls.Add(btnLogout, 2, 0);
 
         headerLayout.Controls.Add(titlePanel, 0, 0);
@@ -248,7 +257,7 @@ public partial class LobbyForm : Form
 
         _lblStatus = new Label
         {
-            Text = "Sẵn sàng. Chọn chế độ chơi để tiếp tục.",
+            Text = "",
             ForeColor = Color.White,
             Font = new Font("Segoe UI", 10F),
             Dock = DockStyle.Fill,
@@ -293,7 +302,24 @@ public partial class LobbyForm : Form
         Controls.Add(bodyWrapper);
         Controls.Add(footerPanel);
         Controls.Add(headerPanel);
+        _footerPanel = footerPanel;
+        _footerPanel.Visible = false;   // ẩn thanh dưới cùng cho đến khi có thông báo
     }
+    private void OpenProfile()
+    {
+        using var dlg = new ProfileForm();
+        dlg.ShowDialog(this);
+    }
+    private Panel _onlineStage = null!;
+    private Panel _offlineStage = null!;
+    private Button _tabOnline = null!;
+    private Button _tabOffline = null!;
+    private Panel _cardRanked = null!;
+    private Panel _cardCasual = null!;
+    private Button _btnFindMatch = null!;
+    private Label _lblFindHint = null!;
+    private bool _isOnlineTab = true;
+    private bool _isRanked = true;
 
     private void BuildEntryPanel()
     {
@@ -304,91 +330,426 @@ public partial class LobbyForm : Form
             Padding = new Padding(12)
         };
 
-        var layout = new TableLayoutPanel
+        // ---- 1. Thanh tab ----
+        var tabBar = new Panel { Dock = DockStyle.Top, Height = 56 };
+        _tabOffline = MakeTab("CHƠI OFFLINE", () => SelectTab(false));
+        _tabOnline = MakeTab("CHƠI VỚI NGƯỜI", () => SelectTab(true));
+        tabBar.Controls.Add(_tabOffline);   // add sau thì nằm ngoài cùng bên trái
+        tabBar.Controls.Add(_tabOnline);
+
+        // ---- 2. Nút lớn ở dưới (kiểu MOBA) ----
+        var bottomBar = new TableLayoutPanel
+        {
+            Dock = DockStyle.Bottom,
+            Height = 104,
+            ColumnCount = 1,
+            RowCount = 2,
+            BackColor = Color.Transparent
+        };
+        bottomBar.RowStyles.Add(new RowStyle(SizeType.Absolute, 72F));
+        bottomBar.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+
+        _btnFindMatch = new Button
+        {
+            Text = "TÌM TRẬN",
+            Size = new Size(380, 56),
+            Anchor = AnchorStyles.None
+        };
+        Theme.StyleButton(_btnFindMatch, Theme.GoldLight, Theme.Ink);
+        _btnFindMatch.Font = Theme.Title(18F);
+        _btnFindMatch.Click += (_, _) =>
+        {
+            if (_isOnlineTab)
+                SetStatus("Tìm trận tự động cần server ghép trận (chưa có). Hãy tạo phòng hoặc nhập mã phòng bên phải.", true);
+            else
+                SetStatus($"Đã chọn: {(_isBotMode ? "chơi với máy" : "chung một máy")}, {_offlinePlayers} người. Bàn chơi sẽ được nối vào ở giai đoạn sau.", false);
+        };
+
+        _lblFindHint = new Label
+        {
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.TopCenter,
+            Font = Theme.Body(9.5F),
+            ForeColor = Theme.Muted
+        };
+
+        bottomBar.Controls.Add(_btnFindMatch, 0, 0);
+        bottomBar.Controls.Add(_lblFindHint, 0, 1);
+
+        // ---- 3. Khu vực giữa: stage online + stage offline ----
+        var stageHost = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 14, 0, 0) };
+
+        _onlineStage = new Panel { Dock = DockStyle.Fill };
+        var cols = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 320,
+            ColumnCount = 2,
+            RowCount = 1
+        };
+        cols.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 68F));
+        cols.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32F));
+
+        var cards = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 2,
             RowCount = 1
         };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        cards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        cards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
 
-        // Cột trái: Tạo phòng mới
-        var leftBox = new Panel
+        _cardRanked = BuildModeCard(
+            "XẾP HẠNG",
+            "Đấu rank với người chơi khác. Kết quả trận ảnh hưởng đến điểm hạng và uy tín.",
+            "Tính điểm hạng · Tính uy tín",
+            () => { _isRanked = true; ApplyModeSelection(); });
+
+        _cardCasual = BuildModeCard(
+            "ĐẤU THƯỜNG",
+            "Chơi thoải mái cùng bạn bè hoặc người lạ, không áp lực thứ hạng.",
+            "Không tính điểm hạng",
+            () => { _isRanked = false; ApplyModeSelection(); });
+
+        cards.Controls.Add(_cardRanked, 0, 0);
+        cards.Controls.Add(_cardCasual, 1, 0);
+        cols.Controls.Add(cards, 0, 0);
+        cols.Controls.Add(BuildFriendsPanel(), 1, 0);
+        _onlineStage.Controls.Add(cols);
+
+        _offlineStage = BuildOfflineStage();
+
+        stageHost.Controls.Add(_onlineStage);
+        stageHost.Controls.Add(_offlineStage);
+
+        // Thứ tự Add: Fill -> Bottom -> Top
+        _entryPanel.Controls.Add(stageHost);
+        _entryPanel.Controls.Add(bottomBar);
+        _entryPanel.Controls.Add(tabBar);
+
+        ApplyModeSelection();
+        SelectTab(true);
+    }
+    private Panel BuildOfflineStage()
+    {
+        var stage = new Panel { Dock = DockStyle.Fill, Visible = false };
+
+        var cols = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 320,
+            ColumnCount = 2,
+            RowCount = 1
+        };
+        cols.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 68F));
+        cols.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32F));
+
+        var cards = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            Margin = new Padding(10),
-            Padding = new Padding(24),
-            BackColor = _paper,
-            BorderStyle = BorderStyle.FixedSingle
+            ColumnCount = 2,
+            RowCount = 1
+        };
+        cards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        cards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+
+        _cardBot = BuildModeCard(
+            "CHƠI VỚI MÁY",
+            "Đấu với bot ngay trên máy của bạn, không cần kết nối mạng.",
+            "Không tính điểm hạng và uy tín",
+            () => { _isBotMode = true; ApplyOfflineSelection(); });
+
+        _cardLocal = BuildModeCard(
+            "CHUNG MỘT MÁY",
+            "Nhiều người luân phiên chơi trên cùng một máy tính.",
+            "Không tính điểm hạng",
+            () => { _isBotMode = false; ApplyOfflineSelection(); });
+
+        cards.Controls.Add(_cardBot, 0, 0);
+        cards.Controls.Add(_cardLocal, 1, 0);
+        cols.Controls.Add(cards, 0, 0);
+        cols.Controls.Add(BuildOfflineSetupPanel(), 1, 0);
+        stage.Controls.Add(cols);
+
+        ApplyOfflineSelection();   // gọi sau khi đã tạo xong các nút số người
+        return stage;
+    }
+
+    private Panel BuildOfflineSetupPanel()
+    {
+        var outer = new Panel
+        {
+            Dock = DockStyle.Fill,
+            Margin = new Padding(8),
+            Padding = new Padding(2),
+            BackColor = Theme.Ink
+        };
+        var inner = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Theme.Paper,
+            Padding = new Padding(18)
         };
 
-        var lblCreateTitle = new Label
+        var lblTitle = new Label
         {
-            Text = "TẠO PHÒNG MỚI",
-            Font = new Font("Segoe UI", 13F, FontStyle.Bold),
-            ForeColor = _navy,
+            Text = "THIẾT LẬP VÁN CHƠI",
             Dock = DockStyle.Top,
-            Height = 36,
-            TextAlign = ContentAlignment.MiddleCenter
+            Height = 40,
+            Font = Theme.Title(13F),
+            ForeColor = Theme.Ink,
+            TextAlign = ContentAlignment.MiddleLeft
         };
 
-        var lblCreateDesc = new Label
+        var lblCount = new Label
         {
-            Text = "Tạo phòng chơi mới (2–4 người) và nhận mã phòng 6 chữ số để mời bạn bè cùng tham gia.",
-            Font = new Font("Segoe UI", 9.5F),
-            ForeColor = Color.DimGray,
+            Text = "Số người chơi",
             Dock = DockStyle.Top,
-            Height = 64,
-            TextAlign = ContentAlignment.TopCenter
+            Height = 34,
+            Font = Theme.Body(9.5F),
+            ForeColor = Theme.Muted,
+            TextAlign = ContentAlignment.BottomLeft
         };
 
-        _btnCreateRoom = new Button
+        var row = new TableLayoutPanel
         {
-            Text = "+ Tạo phòng ngay",
-            BackColor = _navy,
-            ForeColor = _goldLight,
+            Dock = DockStyle.Top,
+            Height = 48,
+            ColumnCount = 3,
+            RowCount = 1
+        };
+        for (int i = 0; i < 3; i++)
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
+
+        _playerCountButtons = new Button[3];
+        for (int i = 0; i < 3; i++)
+        {
+            int count = i + 2;
+            var b = new Button
+            {
+                Text = count.ToString(),
+                Dock = DockStyle.Fill,
+                Margin = new Padding(i == 0 ? 0 : 4, 0, i == 2 ? 0 : 4, 0),
+                FlatStyle = FlatStyle.Flat,
+                Font = Theme.Title(13F),
+                Cursor = Cursors.Hand
+            };
+            b.FlatAppearance.BorderSize = 2;
+            b.FlatAppearance.BorderColor = Theme.Ink;
+            b.Click += (_, _) => { _offlinePlayers = count; ApplyOfflineSelection(); };
+            _playerCountButtons[i] = b;
+            row.Controls.Add(b, i, 0);
+        }
+
+        var spacer = new Panel { Dock = DockStyle.Top, Height = 14 };
+
+        var lblNote = new Label
+        {
+            Text = "Ván chơi offline chạy ngay trên máy này và không đồng bộ lên máy chủ.",
+            Dock = DockStyle.Top,
+            Height = 70,
+            Font = Theme.Body(9.5F),
+            ForeColor = Theme.Muted
+        };
+
+        // Add ngược: control add sau nằm trên cùng
+        inner.Controls.Add(lblNote);
+        inner.Controls.Add(spacer);
+        inner.Controls.Add(row);
+        inner.Controls.Add(lblCount);
+        inner.Controls.Add(lblTitle);
+
+        outer.Controls.Add(inner);
+        return outer;
+    }
+
+    private void ApplyOfflineSelection()
+    {
+        StyleCard(_cardBot, _isBotMode, Theme.Forest);
+        StyleCard(_cardLocal, !_isBotMode, Theme.Navy);
+
+        for (int i = 0; i < _playerCountButtons.Length; i++)
+        {
+            bool selected = _offlinePlayers == i + 2;
+            var b = _playerCountButtons[i];
+            b.BackColor = selected ? Theme.Navy : Color.White;
+            b.ForeColor = selected ? Theme.GoldLight : Theme.Ink;
+            b.FlatAppearance.MouseOverBackColor = b.BackColor;
+            b.FlatAppearance.MouseDownBackColor = b.BackColor;
+        }
+        UpdateHint();
+    }
+    private Button MakeTab(string text, Action onClick)
+    {
+        var b = new Button
+        {
+            Text = text,
+            Dock = DockStyle.Left,
+            Width = 260,
             FlatStyle = FlatStyle.Flat,
-            Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-            Height = 44,
-            Dock = DockStyle.Top,
+            Font = Theme.Title(12F),
             Cursor = Cursors.Hand
         };
-        _btnCreateRoom.FlatAppearance.BorderSize = 0;
-        _btnCreateRoom.Click += async (_, _) => await HandleCreateRoomAsync();
+        b.FlatAppearance.BorderSize = 2;
+        b.FlatAppearance.BorderColor = Theme.Ink;
+        b.Click += (_, _) => onClick();
+        return b;
+    }
 
-        leftBox.Controls.Add(_btnCreateRoom);
-        leftBox.Controls.Add(lblCreateDesc);
-        leftBox.Controls.Add(lblCreateTitle);
+    private static void StyleTab(Button b, bool selected)
+    {
+        b.BackColor = selected ? Theme.Navy : Theme.PaperDark;
+        b.ForeColor = selected ? Theme.GoldLight : Theme.Ink;
+        b.FlatAppearance.MouseOverBackColor = b.BackColor;
+        b.FlatAppearance.MouseDownBackColor = b.BackColor;
+    }
 
-        // Cột phải: Tham gia bằng mã phòng
-        var rightBox = new Panel
+    private void SelectTab(bool online)
+    {
+        _isOnlineTab = online;
+        _onlineStage.Visible = online;
+        _offlineStage.Visible = !online;
+        StyleTab(_tabOnline, online);
+        StyleTab(_tabOffline, !online);
+        _btnFindMatch.Text = online ? "TÌM TRẬN" : "BẮT ĐẦU";
+        UpdateHint();
+    }
+
+    private void ApplyModeSelection()
+    {
+        StyleCard(_cardRanked, _isRanked, Theme.Red);
+        StyleCard(_cardCasual, !_isRanked, Theme.Forest);
+        UpdateHint();
+    }
+
+    private void UpdateHint()
+    {
+        _lblFindHint.Text = _isOnlineTab
+            ? (_isRanked ? "Xếp hạng" : "Đấu thường") + " · 2–4 người"
+            : "Chơi offline · không tính điểm hạng";
+    }
+
+    private static void StyleCard(Panel outer, bool selected, Color accent)
+    {
+        var inner = (Panel)outer.Controls[0];
+        outer.BackColor = selected ? accent : Theme.Ink;
+        outer.Padding = new Padding(selected ? 4 : 2);
+        inner.BackColor = selected ? Theme.Paper : Theme.PaperDark;
+
+        var badge = inner.Controls.OfType<Label>().First(l => l.Name == "badge");
+        badge.BackColor = accent;
+        badge.Visible = selected;
+    }
+
+    private Panel BuildModeCard(string title, string desc, string note, Action onSelect)
+    {
+        var outer = new Panel
         {
             Dock = DockStyle.Fill,
-            Margin = new Padding(10),
-            Padding = new Padding(24),
-            BackColor = _paper,
-            BorderStyle = BorderStyle.FixedSingle
+            Margin = new Padding(8),
+            Padding = new Padding(2),
+            BackColor = Theme.Ink
+        };
+        var inner = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Theme.PaperDark,
+            Padding = new Padding(20, 0, 20, 12)
         };
 
-        var lblJoinTitle = new Label
+        var lblDesc = new Label
         {
-            Text = "THAM GIA PHÒNG",
-            Font = new Font("Segoe UI", 13F, FontStyle.Bold),
-            ForeColor = _navy,
-            Dock = DockStyle.Top,
+            Text = desc,
+            Dock = DockStyle.Fill,
+            Font = Theme.Body(10.5F),
+            ForeColor = Theme.Muted,
+            TextAlign = ContentAlignment.TopLeft
+        };
+        var lblNote = new Label
+        {
+            Text = note,
+            Dock = DockStyle.Bottom,
             Height = 36,
-            TextAlign = ContentAlignment.MiddleCenter
+            Font = Theme.Body(9.5F, FontStyle.Bold),
+            ForeColor = Theme.Ink,
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        var lblTitle = new Label
+        {
+            Text = title,
+            Dock = DockStyle.Top,
+            Height = 64,
+            Font = Theme.Title(18F),
+            ForeColor = Theme.Ink,
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        var badge = new Label
+        {
+            Name = "badge",
+            Text = "ĐANG CHỌN",
+            Dock = DockStyle.Top,
+            Height = 30,
+            Font = Theme.Body(9F, FontStyle.Bold),
+            ForeColor = Color.White,
+            TextAlign = ContentAlignment.MiddleCenter,
+            Visible = false
         };
 
-        var lblJoinDesc = new Label
+        inner.Controls.Add(lblDesc);
+        inner.Controls.Add(lblNote);
+        inner.Controls.Add(lblTitle);
+        inner.Controls.Add(badge);
+        outer.Controls.Add(inner);
+
+        Hook(outer, onSelect);
+        return outer;
+    }
+
+    private static void Hook(Control c, Action onSelect)
+    {
+        c.Cursor = Cursors.Hand;
+        c.Click += (_, _) => onSelect();
+        foreach (Control child in c.Controls) Hook(child, onSelect);
+    }
+
+    private Panel BuildFriendsPanel()
+    {
+        var outer = new Panel
         {
-            Text = "Nhập mã phòng gồm 6 chữ số do chủ phòng cung cấp:",
-            Font = new Font("Segoe UI", 9.5F),
-            ForeColor = Color.DimGray,
+            Dock = DockStyle.Fill,
+            Margin = new Padding(8),
+            Padding = new Padding(2),
+            BackColor = Theme.Ink
+        };
+        var inner = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Theme.Paper,
+            Padding = new Padding(18)
+        };
+
+        var lblTitle = new Label
+        {
+            Text = "CHƠI VỚI BẠN BÈ",
             Dock = DockStyle.Top,
-            Height = 36,
-            TextAlign = ContentAlignment.MiddleCenter
+            Height = 40,
+            Font = Theme.Title(13F),
+            ForeColor = Theme.Ink,
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+
+        _btnCreateRoom = new Button { Text = "+ TẠO PHÒNG", Dock = DockStyle.Top, Height = 44 };
+        Theme.StyleButton(_btnCreateRoom, Theme.Forest);
+        _btnCreateRoom.Click += async (_, _) => await HandleCreateRoomAsync();
+
+        var lblCode = new Label
+        {
+            Text = "Mã phòng 6 chữ số",
+            Dock = DockStyle.Top,
+            Height = 34,
+            Font = Theme.Body(9.5F),
+            ForeColor = Theme.Muted,
+            TextAlign = ContentAlignment.BottomLeft
         };
 
         _txtRoomCode = new TextBox
@@ -399,6 +760,7 @@ public partial class LobbyForm : Form
             Dock = DockStyle.Top,
             PlaceholderText = "000000"
         };
+        Theme.StyleTextBox(_txtRoomCode);
         _txtRoomCode.KeyDown += async (_, e) =>
         {
             if (e.KeyCode == Keys.Enter)
@@ -408,32 +770,30 @@ public partial class LobbyForm : Form
             }
         };
 
-        var spacer = new Panel { Dock = DockStyle.Top, Height = 12 };
-
-        _btnJoinRoom = new Button
-        {
-            Text = "Vào phòng",
-            BackColor = _red,
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat,
-            Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-            Height = 44,
-            Dock = DockStyle.Top,
-            Cursor = Cursors.Hand
-        };
-        _btnJoinRoom.FlatAppearance.BorderSize = 0;
+        _btnJoinRoom = new Button { Text = "VÀO PHÒNG", Dock = DockStyle.Top, Height = 44 };
+        Theme.StyleButton(_btnJoinRoom, Theme.Navy);
         _btnJoinRoom.Click += async (_, _) => await HandleJoinRoomAsync();
 
-        rightBox.Controls.Add(_btnJoinRoom);
-        rightBox.Controls.Add(spacer);
-        rightBox.Controls.Add(_txtRoomCode);
-        rightBox.Controls.Add(lblJoinDesc);
-        rightBox.Controls.Add(lblJoinTitle);
+        var spacer1 = new Panel { Dock = DockStyle.Top, Height = 14 };
+        var spacer2 = new Panel { Dock = DockStyle.Top, Height = 14 };
 
-        layout.Controls.Add(leftBox, 0, 0);
-        layout.Controls.Add(rightBox, 1, 0);
-        _entryPanel.Controls.Add(layout);
+        // Add ngược: control add sau nằm trên cùng
+        inner.Controls.Add(_btnJoinRoom);
+        inner.Controls.Add(spacer2);
+        inner.Controls.Add(_txtRoomCode);
+        inner.Controls.Add(lblCode);
+        inner.Controls.Add(spacer1);
+        inner.Controls.Add(_btnCreateRoom);
+        inner.Controls.Add(lblTitle);
+
+        outer.Controls.Add(inner);
+        return outer;
     }
+    private Panel _cardBot = null!;
+    private Panel _cardLocal = null!;
+    private Button[] _playerCountButtons = null!;
+    private bool _isBotMode = true;
+    private int _offlinePlayers = 2;
 
     private void BuildRoomPanel()
     {
@@ -603,6 +963,7 @@ public partial class LobbyForm : Form
 
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
+        _statusTimer.Stop();
         if (_client != null)
         {
             _client.MessageReceived -= OnServerMessageReceived;
@@ -901,7 +1262,12 @@ public partial class LobbyForm : Form
     private void SetStatus(string text, bool isError)
     {
         _lblStatus.Text = text;
-        _lblStatus.ForeColor = isError ? Color.Firebrick : _navy;
+        _lblStatus.ForeColor = isError ? ColorTranslator.FromHtml("#FF9B8A") : Color.White;
+        _footerPanel.Visible = !string.IsNullOrWhiteSpace(text);
+
+        _statusTimer.Stop();
+        if (!isError && !_btnReconnect.Visible)
+            _statusTimer.Start();   // thông báo thường tự ẩn sau 4 giây
     }
 
     private async Task HandleLogoutAsync(Button btnLogout)
