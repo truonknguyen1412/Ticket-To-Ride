@@ -21,10 +21,11 @@ public sealed class SessionManager
 
     public int Count => _byPlayer.Count;
 
-    public Session Create(string playerName, string? accountId = null, string? email = null)
+    public Session Create(string playerName, string? accountId = null, string? email = null, Guid? dbAccountId = null, int rankPoints = 100)
     {
-        var s = new Session(Guid.NewGuid().ToString("N"), playerName, NewToken(), accountId, email)
+        var s = new Session(Guid.NewGuid().ToString("N"), playerName, NewToken(), accountId, email, dbAccountId)
         {
+            RankPoints = rankPoints,
             ExpiresAtUtc = DateTime.UtcNow + TokenLifetime,
         };
         _byPlayer[s.PlayerId] = s;
@@ -63,7 +64,7 @@ public sealed class SessionManager
     /// <summary>Gỡ session và thu hồi token.</summary>
     public void Remove(Session s, string reason = "thu hồi")
     {
-        if (!_byPlayer.TryRemove(s.PlayerId, out _)) return;       // đã gỡ rồi
+        if (!_byPlayer.TryRemove(s.PlayerId, out _)) return;
         _byToken.TryRemove(s.ResumeToken, out _);
         if (s.AccountId != null)
             _byAccount.TryRemove(new KeyValuePair<string, string>(s.AccountId, s.PlayerId));

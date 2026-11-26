@@ -1,4 +1,5 @@
-﻿using TicketToRide.Client.Services;
+﻿using TicketToRide.Client.Controls;
+using TicketToRide.Client.Services;
 using TicketToRide.Client.Utils;
 using TicketToRide.ClientCore;
 using TicketToRide.Shared.Net;
@@ -6,14 +7,11 @@ using NetMessage = TicketToRide.Shared.Net.Message;
 
 namespace TicketToRide.Client.Forms;
 
-using TicketToRide.Client.Controls;
-
 public partial class LobbyForm : Form
 {
     private readonly FirebaseAuthService _firebaseAuth = new();
     private GameClient? _client;
     private readonly ToolTip _tip = new();
-
 
     // Bảng màu Ticket to Ride Vietnam
     private readonly Color _bgCream = Theme.Cream;
@@ -24,7 +22,6 @@ public partial class LobbyForm : Form
     private readonly Color _gold = Theme.Gold;
     private readonly Color _goldLight = Theme.GoldLight;
     private readonly Color _forestGreen = Color.ForestGreen;
-
 
     // Khu vực ngoài phòng (Tạo / Tham gia phòng)
     private Panel _entryPanel = null!;
@@ -42,17 +39,56 @@ public partial class LobbyForm : Form
     private Button _btnStartGame = null!;
     private Button _btnLeaveRoom = null!;
 
-    // Thanh trạng thái & nút nối lại
+    // Thanh trạng thái, timer & nút nối lại
     private Label _lblStatus = null!;
     private Panel _footerPanel = null!;
     private readonly System.Windows.Forms.Timer _statusTimer = new() { Interval = 4000 };
+    private readonly System.Windows.Forms.Timer _matchTimer = new() { Interval = 1000 };
     private Button _btnReconnect = null!;
 
+    // Trạng thái phòng & ghép trận
     private string? _currentRoomCode;
+    private readonly string? _initialRoomCode;
+    private readonly string? _initialRoomStatus;
     private bool _isReady;
+    private bool _isReadyCheckRoom;
+    private int _readyCheckRemaining;
+    private bool _isSearchingMatch;
+    private bool _searchIsRanked = true;
+    private int _queuedCount = 1;
+    private int _neededPlayers = Protocol.MinPlayers;
+    private int _matchElapsedSeconds;
+    private bool _kickedByOtherDevice;
+    private string? _kickedMessage;
+    private bool _voluntaryLogout;
+    private bool _isClosingForKick;
 
-    public LobbyForm()
+    // Trạng thái tab / chế độ
+    private Panel _onlineStage = null!;
+    private Panel _offlineStage = null!;
+    private Button _tabOnline = null!;
+    private Button _tabOffline = null!;
+    private Panel _cardRanked = null!;
+    private Panel _cardCasual = null!;
+    private Button _btnFindMatch = null!;
+    private Label _lblFindHint = null!;
+    private bool _isOnlineTab = true;
+    private bool _isRanked = true;
+
+    private Panel _cardBot = null!;
+    private Panel _cardLocal = null!;
+    private Button[] _playerCountButtons = null!;
+    private bool _isBotMode = true;
+    private int _offlinePlayers = 2;
+
+    public bool WasKickedByOtherDevice => _kickedByOtherDevice;
+    public string? KickedMessage => _kickedMessage;
+
+    public LobbyForm(string? activeRoomCode = null, string? activeRoomStatus = null)
     {
+        _initialRoomCode = activeRoomCode;
+        _initialRoomStatus = activeRoomStatus;
+
         InitializeComponent();
         SetupCustomUi();
         Theme.FixTextRendering(this);
@@ -60,11 +96,46 @@ public partial class LobbyForm : Form
         _statusTimer.Tick += (_, _) =>
         {
             _statusTimer.Stop();
-            if (!_btnReconnect.Visible) _footerPanel.Visible = false;
+            if (!_btnReconnect.Visible && !_isSearchingMatch && !_isReadyCheckRoom)
+                _footerPanel.Visible = false;
+        };
+
+        _matchTimer.Tick += (_, _) =>
+        {
+            if (!_isSearchingMatch)
+            {
+                _matchTimer.Stop();
+                return;
+            }
+            _matchElapsedSeconds++;
+            RenderMatchSearchingText();
         };
 
         BindClientEvents();
-        ShowEntryView();
+        ApplyInitialRoomState();
+    }
+
+    private void ApplyInitialRoomState()
+    {
+        if (!string.IsNullOrWhiteSpace(_initialRoomCode))
+        {
+            _currentRoomCode = _initialRoomCode;
+            ShowRoomView(_initialRoomCode);
+            if (string.Equals(_initialRoomStatus, WireStatus.InGame, StringComparison.OrdinalIgnoreCase))
+            {
+                _lblRoomHint.Text = "Đang khôi phục tiến trình ván đấu...";
+                SetStatus($"Đã kế thừa phòng {_initialRoomCode} (đang trong trận). Đang đồng bộ trạng thái...", false);
+            }
+            else
+            {
+                _lblRoomHint.Text = "Đã khôi phục phòng chờ...";
+                SetStatus($"Đã kế thừa phòng chờ {_initialRoomCode}.", false);
+            }
+        }
+        else
+        {
+            ShowEntryView();
+        }
     }
 
     private void SetupCustomUi()
@@ -97,12 +168,9 @@ public partial class LobbyForm : Form
             BackColor = Color.Transparent
         };
 
-        headerLayout.ColumnStyles.Add(
-            new ColumnStyle(SizeType.Percent, 64F));
-        headerLayout.ColumnStyles.Add(
-            new ColumnStyle(SizeType.Percent, 36F));
+        headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 64F));
+        headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 36F));
 
-        // Phần trái: tên game và dải màu
         var titlePanel = new Panel
         {
             Dock = DockStyle.Fill,
@@ -132,15 +200,15 @@ public partial class LobbyForm : Form
 
         Color[] trainColors =
         {
-        Color.FromArgb(190, 54, 48),
-        Color.FromArgb(48, 105, 166),
-        Color.FromArgb(43, 119, 82),
-        Color.FromArgb(232, 187, 55),
-        Color.FromArgb(53, 39, 29),
-        Color.FromArgb(255, 250, 238),
-        Color.FromArgb(224, 119, 43),
-        Color.FromArgb(204, 133, 164)
-    };
+            Color.FromArgb(190, 54, 48),
+            Color.FromArgb(48, 105, 166),
+            Color.FromArgb(43, 119, 82),
+            Color.FromArgb(232, 187, 55),
+            Color.FromArgb(53, 39, 29),
+            Color.FromArgb(255, 250, 238),
+            Color.FromArgb(224, 119, 43),
+            Color.FromArgb(204, 133, 164)
+        };
 
         foreach (Color trainColor in trainColors)
         {
@@ -156,7 +224,6 @@ public partial class LobbyForm : Form
         titlePanel.Controls.Add(colorStrip);
         titlePanel.Controls.Add(lblGameTitle);
 
-        // Phần phải: thông tin tài khoản
         var userPanel = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -165,12 +232,9 @@ public partial class LobbyForm : Form
             BackColor = Color.Transparent
         };
 
-        userPanel.ColumnStyles.Add(
-            new ColumnStyle(SizeType.Percent, 100F));
-        userPanel.ColumnStyles.Add(
-            new ColumnStyle(SizeType.Absolute, 76F));
-        userPanel.ColumnStyles.Add(
-            new ColumnStyle(SizeType.Absolute, 145F));
+        userPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        userPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 76F));
+        userPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 145F));
 
         string username = SessionManager.DisplayName ?? "Người chơi";
 
@@ -206,7 +270,7 @@ public partial class LobbyForm : Form
         var avatar = new CircleAvatar
         {
             Initial = username,
-            Anchor = AnchorStyles.None,   // tự căn giữa ô, không bị kéo giãn tràn header
+            Anchor = AnchorStyles.None,
             Margin = new Padding(0)
         };
         _tip.SetToolTip(avatar, "Hồ sơ, lịch sử trận đấu, hạng và uy tín");
@@ -226,8 +290,7 @@ public partial class LobbyForm : Form
 
         btnLogout.FlatAppearance.BorderColor = Color.White;
         btnLogout.FlatAppearance.BorderSize = 2;
-        btnLogout.Click += async (_, _) =>
-            await HandleLogoutAsync(btnLogout);
+        btnLogout.Click += async (_, _) => await HandleLogoutAsync(btnLogout);
 
         userPanel.Controls.Add(userInfoPanel, 0, 0);
         userPanel.Controls.Add(avatar, 1, 0);
@@ -278,8 +341,7 @@ public partial class LobbyForm : Form
         };
 
         _btnReconnect.FlatAppearance.BorderSize = 0;
-        _btnReconnect.Click += async (_, _) =>
-            await HandleReconnectAsync();
+        _btnReconnect.Click += async (_, _) => await HandleReconnectAsync();
 
         footerPanel.Controls.Add(_lblStatus);
         footerPanel.Controls.Add(_btnReconnect);
@@ -298,28 +360,18 @@ public partial class LobbyForm : Form
         bodyWrapper.Controls.Add(_entryPanel);
         bodyWrapper.Controls.Add(_roomPanel);
 
-        // Thứ tự thêm control để Dock hoạt động đúng
         Controls.Add(bodyWrapper);
         Controls.Add(footerPanel);
         Controls.Add(headerPanel);
         _footerPanel = footerPanel;
-        _footerPanel.Visible = false;   // ẩn thanh dưới cùng cho đến khi có thông báo
+        _footerPanel.Visible = false;
     }
+
     private void OpenProfile()
     {
         using var dlg = new ProfileForm();
         dlg.ShowDialog(this);
     }
-    private Panel _onlineStage = null!;
-    private Panel _offlineStage = null!;
-    private Button _tabOnline = null!;
-    private Button _tabOffline = null!;
-    private Panel _cardRanked = null!;
-    private Panel _cardCasual = null!;
-    private Button _btnFindMatch = null!;
-    private Label _lblFindHint = null!;
-    private bool _isOnlineTab = true;
-    private bool _isRanked = true;
 
     private void BuildEntryPanel()
     {
@@ -330,14 +382,12 @@ public partial class LobbyForm : Form
             Padding = new Padding(12)
         };
 
-        // ---- 1. Thanh tab ----
         var tabBar = new Panel { Dock = DockStyle.Top, Height = 56 };
         _tabOffline = MakeTab("CHƠI OFFLINE", () => SelectTab(false));
         _tabOnline = MakeTab("CHƠI VỚI NGƯỜI", () => SelectTab(true));
-        tabBar.Controls.Add(_tabOffline);   // add sau thì nằm ngoài cùng bên trái
+        tabBar.Controls.Add(_tabOffline);
         tabBar.Controls.Add(_tabOnline);
 
-        // ---- 2. Nút lớn ở dưới (kiểu MOBA) ----
         var bottomBar = new TableLayoutPanel
         {
             Dock = DockStyle.Bottom,
@@ -357,13 +407,7 @@ public partial class LobbyForm : Form
         };
         Theme.StyleButton(_btnFindMatch, Theme.GoldLight, Theme.Ink);
         _btnFindMatch.Font = Theme.Title(18F);
-        _btnFindMatch.Click += (_, _) =>
-        {
-            if (_isOnlineTab)
-                SetStatus("Tìm trận tự động cần server ghép trận (chưa có). Hãy tạo phòng hoặc nhập mã phòng bên phải.", true);
-            else
-                SetStatus($"Đã chọn: {(_isBotMode ? "chơi với máy" : "chung một máy")}, {_offlinePlayers} người. Bàn chơi sẽ được nối vào ở giai đoạn sau.", false);
-        };
+        _btnFindMatch.Click += async (_, _) => await HandleFindOrCancelMatchAsync();
 
         _lblFindHint = new Label
         {
@@ -376,7 +420,6 @@ public partial class LobbyForm : Form
         bottomBar.Controls.Add(_btnFindMatch, 0, 0);
         bottomBar.Controls.Add(_lblFindHint, 0, 1);
 
-        // ---- 3. Khu vực giữa: stage online + stage offline ----
         var stageHost = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 14, 0, 0) };
 
         _onlineStage = new Panel { Dock = DockStyle.Fill };
@@ -422,7 +465,6 @@ public partial class LobbyForm : Form
         stageHost.Controls.Add(_onlineStage);
         stageHost.Controls.Add(_offlineStage);
 
-        // Thứ tự Add: Fill -> Bottom -> Top
         _entryPanel.Controls.Add(stageHost);
         _entryPanel.Controls.Add(bottomBar);
         _entryPanel.Controls.Add(tabBar);
@@ -430,6 +472,7 @@ public partial class LobbyForm : Form
         ApplyModeSelection();
         SelectTab(true);
     }
+
     private Panel BuildOfflineStage()
     {
         var stage = new Panel { Dock = DockStyle.Fill, Visible = false };
@@ -471,7 +514,7 @@ public partial class LobbyForm : Form
         cols.Controls.Add(BuildOfflineSetupPanel(), 1, 0);
         stage.Controls.Add(cols);
 
-        ApplyOfflineSelection();   // gọi sau khi đã tạo xong các nút số người
+        ApplyOfflineSelection();
         return stage;
     }
 
@@ -552,7 +595,6 @@ public partial class LobbyForm : Form
             ForeColor = Theme.Muted
         };
 
-        // Add ngược: control add sau nằm trên cùng
         inner.Controls.Add(lblNote);
         inner.Controls.Add(spacer);
         inner.Controls.Add(row);
@@ -579,6 +621,7 @@ public partial class LobbyForm : Form
         }
         UpdateHint();
     }
+
     private Button MakeTab(string text, Action onClick)
     {
         var b = new Button
@@ -611,7 +654,7 @@ public partial class LobbyForm : Form
         _offlineStage.Visible = !online;
         StyleTab(_tabOnline, online);
         StyleTab(_tabOffline, !online);
-        _btnFindMatch.Text = online ? "TÌM TRẬN" : "BẮT ĐẦU";
+        _btnFindMatch.Text = online ? (_isSearchingMatch ? "HỦY TÌM TRẬN" : "TÌM TRẬN") : "BẮT ĐẦU";
         UpdateHint();
     }
 
@@ -777,7 +820,6 @@ public partial class LobbyForm : Form
         var spacer1 = new Panel { Dock = DockStyle.Top, Height = 14 };
         var spacer2 = new Panel { Dock = DockStyle.Top, Height = 14 };
 
-        // Add ngược: control add sau nằm trên cùng
         inner.Controls.Add(_btnJoinRoom);
         inner.Controls.Add(spacer2);
         inner.Controls.Add(_txtRoomCode);
@@ -789,11 +831,6 @@ public partial class LobbyForm : Form
         outer.Controls.Add(inner);
         return outer;
     }
-    private Panel _cardBot = null!;
-    private Panel _cardLocal = null!;
-    private Button[] _playerCountButtons = null!;
-    private bool _isBotMode = true;
-    private int _offlinePlayers = 2;
 
     private void BuildRoomPanel()
     {
@@ -805,7 +842,6 @@ public partial class LobbyForm : Form
             Padding = new Padding(12)
         };
 
-        // Hàng thông tin mã phòng trên cùng
         var topBar = new Panel
         {
             Dock = DockStyle.Top,
@@ -869,7 +905,6 @@ public partial class LobbyForm : Form
         topBar.Controls.Add(_lblRoomCodeValue);
         topBar.Controls.Add(lblCodeCaption);
 
-        // Danh sách thành viên trong phòng
         _lvMembers = new ListView
         {
             Dock = DockStyle.Fill,
@@ -888,7 +923,6 @@ public partial class LobbyForm : Form
         _lvMembers.Columns.Add("Trạng thái", 180, HorizontalAlignment.Center);
         _lvMembers.Columns.Add("Kết nối", 140, HorizontalAlignment.Center);
 
-        // Hàng nút điều khiển dưới cùng
         var actionBar = new Panel
         {
             Dock = DockStyle.Bottom,
@@ -963,7 +997,10 @@ public partial class LobbyForm : Form
 
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
+        StopMatchSearchUi();
         _statusTimer.Stop();
+        _matchTimer.Dispose();
+        _statusTimer.Dispose();
         if (_client != null)
         {
             _client.MessageReceived -= OnServerMessageReceived;
@@ -972,13 +1009,129 @@ public partial class LobbyForm : Form
         base.OnFormClosing(e);
     }
 
+    private void TriggerSessionReplaced(string? message)
+    {
+        if (_kickedByOtherDevice || _voluntaryLogout || _isClosingForKick) return;
+        _kickedByOtherDevice = true;
+        _kickedMessage = message ?? "Tài khoản của bạn đã được đăng nhập trên một thiết bị khác.";
+
+        if (InvokeRequired)
+        {
+            try
+            {
+                BeginInvoke(new Action(() => TriggerSessionReplaced(_kickedMessage)));
+            }
+            catch { }
+            return;
+        }
+
+        _isClosingForKick = true;
+        StopMatchSearchUi();
+        _statusTimer.Stop();
+        _matchTimer.Stop();
+
+        try
+        {
+            if (_client != null)
+            {
+                _client.MessageReceived -= OnServerMessageReceived;
+                _client.Disconnected -= OnServerDisconnected;
+                _ = _client.DisconnectAsync();
+            }
+        }
+        catch { }
+
+        DialogResult = DialogResult.Abort;
+        Close();
+    }
+
     private void OnServerMessageReceived(NetMessage msg)
     {
         switch (msg.Type)
         {
+            case MessageTypes.MatchStatus:
+                {
+                    var st = msg.ReadPayload<MatchStatusPayload>();
+                    if (st != null)
+                    {
+                        _isReadyCheckRoom = false;
+                        _currentRoomCode = null;
+                        _isReady = false;
+                        ShowEntryView();
+
+                        _searchIsRanked = st.IsRanked;
+                        _queuedCount = st.QueuedCount;
+                        _neededPlayers = st.NeededPlayers;
+                        _matchElapsedSeconds = Math.Max(0, st.ElapsedSeconds);
+                        _isSearchingMatch = true;
+                        if (_isOnlineTab)
+                            _btnFindMatch.Text = "HỦY TÌM TRẬN";
+                        _matchTimer.Start();
+                        RenderMatchSearchingText();
+                    }
+                    break;
+                }
+
+            case MessageTypes.MatchFound:
+                {
+                    var found = msg.ReadPayload<MatchFoundPayload>();
+                    StopMatchSearchUi();
+                    if (found != null)
+                    {
+                        _currentRoomCode = found.RoomCode;
+                        _isReadyCheckRoom = true;
+                        _readyCheckRemaining = Protocol.ReadyCheckSeconds;
+                        _searchIsRanked = found.IsRanked;
+                        _isReady = false;
+                        ShowRoomView(found.RoomCode);
+                        RenderPlayersList(found.Players, hostId: found.Players.FirstOrDefault(p => p.IsHost)?.PlayerId, wireStatus: WireStatus.Lobby, isReadyCheck: true, remainingSeconds: Protocol.ReadyCheckSeconds);
+                    }
+                    break;
+                }
+
+            case MessageTypes.ReadyCheckUpdated:
+                {
+                    var rc = msg.ReadPayload<ReadyCheckUpdatedPayload>();
+                    if (rc != null)
+                    {
+                        StopMatchSearchUi();
+                        _currentRoomCode = rc.RoomCode;
+                        _isReadyCheckRoom = true;
+                        _readyCheckRemaining = Math.Max(0, rc.RemainingSeconds);
+                        _searchIsRanked = rc.IsRanked;
+                        ShowRoomView(rc.RoomCode);
+                        RenderPlayersList(rc.Players, hostId: rc.Players.FirstOrDefault(p => p.IsHost)?.PlayerId, wireStatus: WireStatus.Lobby, isReadyCheck: true, remainingSeconds: rc.RemainingSeconds);
+                    }
+                    break;
+                }
+
+            case MessageTypes.MatchPenalty:
+                {
+                    var pen = msg.ReadPayload<MatchPenaltyPayload>();
+                    StopMatchSearchUi();
+                    _isReadyCheckRoom = false;
+                    _currentRoomCode = null;
+                    _isReady = false;
+                    ShowEntryView();
+                    var text = pen?.Message ?? $"Bạn chưa sẵn sàng nên bị cấm ghép trận Rank/Thường trong {Protocol.MatchPenaltySeconds} giây.";
+                    SetStatus(text, true);
+                    break;
+                }
+
             case MessageTypes.RoomUpdated:
+                StopMatchSearchUi();
                 var update = msg.ReadPayload<RoomUpdatedPayload>();
                 if (update != null) ApplyRoomUpdate(update);
+                break;
+
+            case "GAME_SNAPSHOT":
+                StopMatchSearchUi();
+                if (!string.IsNullOrWhiteSpace(_currentRoomCode))
+                {
+                    ShowRoomView(_currentRoomCode);
+                    _lblRoomHint.Text = "Đang trong trận — đã đồng bộ dữ liệu ván đấu.";
+                    SetStatus($"Đã khôi phục tiến trình ván đấu tại phòng {_currentRoomCode}. Tiếp tục chơi!", false);
+                }
                 break;
 
             case MessageTypes.PlayerConnection:
@@ -988,31 +1141,145 @@ public partial class LobbyForm : Form
 
             case MessageTypes.Error:
                 var err = msg.ReadPayload<ErrorPayload>();
-                if (err != null) SetStatus(err.Message, true);
+                if (err != null)
+                {
+                    if (string.Equals(err.Code, ErrorCodes.SessionReplaced, StringComparison.Ordinal))
+                    {
+                        TriggerSessionReplaced(err.Message);
+                        return;
+                    }
+                    SetStatus(err.Message, true);
+                }
+                break;
+
+            case "GAME_ENDED":
+                StopMatchSearchUi();
+                _isReadyCheckRoom = false;
+                _currentRoomCode = null;
+                _isReady = false;
+                ShowEntryView();
+                SetStatus("Trận đấu đã kết thúc. Bạn có thể tìm trận mới hoặc tạo/vào phòng.", false);
                 break;
         }
     }
 
     private void OnServerDisconnected(string reason)
     {
+        if (_voluntaryLogout || _isClosingForKick) return;
+        StopMatchSearchUi();
+
+        if (_kickedByOtherDevice || string.IsNullOrEmpty(SessionManager.ResumeToken) ||
+            reason.Contains("đăng nhập", StringComparison.OrdinalIgnoreCase) ||
+            reason.Contains("SESSION_REPLACED", StringComparison.OrdinalIgnoreCase))
+        {
+            TriggerSessionReplaced(_kickedMessage ?? "Tài khoản của bạn đã được đăng nhập trên một thiết bị khác.");
+            return;
+        }
+
         SetStatus($"Mất kết nối tới Server: {reason}", true);
         _btnReconnect.Visible = true;
     }
 
-    // ------------------------------------------------------------ thao tác sảnh chờ
+    // ------------------------------------------------------------ thao tác sảnh chờ & ghép trận
+
+    private async Task HandleFindOrCancelMatchAsync()
+    {
+        if (!_isOnlineTab)
+        {
+            SetStatus($"Đã chọn: {(_isBotMode ? "chơi với máy" : "chung một máy")}, {_offlinePlayers} người. Bàn chơi sẽ được nối vào ở giai đoạn sau.", false);
+            return;
+        }
+
+        if (_client == null)
+        {
+            SetStatus("Chưa kết nối tới Server.", true);
+            return;
+        }
+
+        _btnFindMatch.Enabled = false;
+        try
+        {
+            if (!_isSearchingMatch)
+            {
+                _searchIsRanked = _isRanked;
+                _queuedCount = 1;
+                _neededPlayers = Protocol.MinPlayers;
+                _matchElapsedSeconds = 0;
+
+                await _client.FindMatchAsync(_isRanked);
+                _isSearchingMatch = true;
+                _btnFindMatch.Text = "HỦY TÌM TRẬN";
+                _matchTimer.Start();
+                RenderMatchSearchingText();
+            }
+            else
+            {
+                await _client.CancelMatchAsync();
+                StopMatchSearchUi();
+                SetStatus("Đã hủy tìm trận.", false);
+            }
+        }
+        catch (ServerErrorException ex) when (string.Equals(ex.Code, ErrorCodes.SessionReplaced, StringComparison.Ordinal))
+        {
+            TriggerSessionReplaced(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            SetStatus(ex.Message, true);
+        }
+        finally
+        {
+            _btnFindMatch.Enabled = true;
+        }
+    }
+
+    private async Task CancelMatchQuietlyIfNeededAsync()
+    {
+        if (!_isSearchingMatch) return;
+        StopMatchSearchUi();
+        if (_client != null)
+        {
+            try { await _client.CancelMatchAsync(); } catch { }
+        }
+    }
+
+    private void StopMatchSearchUi()
+    {
+        _isSearchingMatch = false;
+        _matchTimer.Stop();
+        _matchElapsedSeconds = 0;
+        if (_isOnlineTab)
+            _btnFindMatch.Text = "TÌM TRẬN";
+    }
+
+    private void RenderMatchSearchingText()
+    {
+        string modeLabel = _searchIsRanked ? "Xếp hạng" : "Đấu thường";
+        string text = $"Đang tìm trận {modeLabel}: {_queuedCount} người trong hàng chờ (tối thiểu {_neededPlayers}) · {_matchElapsedSeconds}s";
+        _lblStatus.Text = text;
+        _lblStatus.ForeColor = Color.White;
+        _footerPanel.Visible = true;
+        _statusTimer.Stop();
+    }
 
     private async Task HandleCreateRoomAsync()
     {
         if (_client == null) return;
+        await CancelMatchQuietlyIfNeededAsync();
         SetActionsEnabled(false);
         SetStatus("Đang tạo phòng mới...", false);
         try
         {
             var code = await _client.CreateRoomAsync();
             _currentRoomCode = code;
+            _isReadyCheckRoom = false;
             _isReady = false;
             ShowRoomView(code);
             SetStatus($"Đã tạo phòng {code}. Chia sẻ mã này cho bạn bè để vào phòng.", false);
+        }
+        catch (ServerErrorException ex) when (string.Equals(ex.Code, ErrorCodes.SessionReplaced, StringComparison.Ordinal))
+        {
+            TriggerSessionReplaced(ex.Message);
         }
         catch (Exception ex)
         {
@@ -1029,7 +1296,6 @@ public partial class LobbyForm : Form
         if (_client == null) return;
         var code = _txtRoomCode.Text.Trim();
 
-        // Kiểm tra dữ liệu nhập trên giao diện (Client-side Validation)
         if (code.Length != 6 || !code.All(char.IsDigit))
         {
             SetStatus("Mã phòng không hợp lệ. Vui lòng nhập đúng 6 chữ số.", true);
@@ -1037,15 +1303,21 @@ public partial class LobbyForm : Form
             return;
         }
 
+        await CancelMatchQuietlyIfNeededAsync();
         SetActionsEnabled(false);
         SetStatus($"Đang tham gia phòng {code}...", false);
         try
         {
             await _client.JoinRoomAsync(code);
             _currentRoomCode = code;
+            _isReadyCheckRoom = false;
             _isReady = false;
             ShowRoomView(code);
             SetStatus($"Đã vào phòng {code}.", false);
+        }
+        catch (ServerErrorException ex) when (string.Equals(ex.Code, ErrorCodes.SessionReplaced, StringComparison.Ordinal))
+        {
+            TriggerSessionReplaced(ex.Message);
         }
         catch (Exception ex)
         {
@@ -1064,6 +1336,10 @@ public partial class LobbyForm : Form
         try
         {
             await _client.SetReadyAsync(!_isReady);
+        }
+        catch (ServerErrorException ex) when (string.Equals(ex.Code, ErrorCodes.SessionReplaced, StringComparison.Ordinal))
+        {
+            TriggerSessionReplaced(ex.Message);
         }
         catch (Exception ex)
         {
@@ -1084,6 +1360,10 @@ public partial class LobbyForm : Form
         {
             await _client.StartGameAsync();
         }
+        catch (ServerErrorException ex) when (string.Equals(ex.Code, ErrorCodes.SessionReplaced, StringComparison.Ordinal))
+        {
+            TriggerSessionReplaced(ex.Message);
+        }
         catch (Exception ex)
         {
             SetStatus(ex.Message, true);
@@ -1098,10 +1378,15 @@ public partial class LobbyForm : Form
         try
         {
             await _client.LeaveRoomAsync();
+            _isReadyCheckRoom = false;
             _currentRoomCode = null;
             _isReady = false;
             ShowEntryView();
             SetStatus("Bạn đã rời khỏi phòng.", false);
+        }
+        catch (ServerErrorException ex) when (string.Equals(ex.Code, ErrorCodes.SessionReplaced, StringComparison.Ordinal))
+        {
+            TriggerSessionReplaced(ex.Message);
         }
         catch (Exception ex)
         {
@@ -1124,6 +1409,10 @@ public partial class LobbyForm : Form
             _btnReconnect.Visible = false;
             SetStatus("Đã khôi phục kết nối thành công!", false);
         }
+        catch (ServerErrorException ex) when (string.Equals(ex.Code, ErrorCodes.SessionReplaced, StringComparison.Ordinal))
+        {
+            TriggerSessionReplaced(ex.Message);
+        }
         catch (Exception ex)
         {
             SetStatus($"Kết nối lại thất bại: {ex.Message}", true);
@@ -1142,6 +1431,22 @@ public partial class LobbyForm : Form
         _currentRoomCode = roomCode;
         ShowRoomView(roomCode);
 
+        RenderPlayersList(members, hostId, status, _isReadyCheckRoom, _readyCheckRemaining);
+
+        if (status == WireStatus.InGame)
+        {
+            _isReadyCheckRoom = false;
+            SetStatus("Ván đấu đang diễn ra! (Đã đồng bộ trạng thái phòng/trận)", false);
+        }
+    }
+
+    private void RenderPlayersList(
+        IReadOnlyList<PlayerPublic> members,
+        string? hostId,
+        string wireStatus,
+        bool isReadyCheck,
+        int remainingSeconds)
+    {
         var myId = SessionManager.Uid ?? _client?.PlayerId;
         var isHost = string.Equals(hostId, myId, StringComparison.Ordinal);
 
@@ -1149,7 +1454,7 @@ public partial class LobbyForm : Form
         _lvMembers.Items.Clear();
 
         int index = 1;
-        bool allGuestsReady = true;
+        bool allPlayersReady = members.Count > 0;
 
         foreach (var member in members)
         {
@@ -1158,8 +1463,9 @@ public partial class LobbyForm : Form
             if (string.Equals(playerId, myId, StringComparison.Ordinal))
                 _isReady = ready;
 
-            if (!memberIsHost && (!ready || connState != WireStatus.Connected))
-                allGuestsReady = false;
+            bool countsAsReady = isReadyCheck ? ready : (memberIsHost || ready);
+            if (!countsAsReady || connState != WireStatus.Connected)
+                allPlayersReady = false;
 
             var item = new ListViewItem(index.ToString());
             item.Tag = playerId;
@@ -1167,12 +1473,12 @@ public partial class LobbyForm : Form
                 ? $"{playerName} (Bạn)"
                 : playerName);
             item.SubItems.Add(memberIsHost ? "Chủ phòng" : "Thành viên");
-            item.SubItems.Add(memberIsHost ? "Chủ phòng" : (ready ? "Đã sẵn sàng" : "Chưa sẵn sàng"));
+            item.SubItems.Add(ready ? "Đã sẵn sàng" : (memberIsHost && !isReadyCheck ? "Chủ phòng" : "Chưa sẵn sàng"));
             item.SubItems.Add(FormatConnState(connState));
 
             if (connState != WireStatus.Connected)
                 item.ForeColor = Color.Firebrick;
-            else if (memberIsHost || ready)
+            else if (ready || (memberIsHost && !isReadyCheck))
                 item.ForeColor = _forestGreen;
 
             _lvMembers.Items.Add(item);
@@ -1180,39 +1486,41 @@ public partial class LobbyForm : Form
         }
         _lvMembers.EndUpdate();
 
-        // Cập nhật nút thao tác theo vai trò
+        if (isReadyCheck)
+        {
+            _btnStartGame.Visible = false;
+            _btnReady.Visible = true;
+            _btnReady.Enabled = true;
+            _btnReady.Text = _isReady ? "Đã sẵn sàng ✓" : "Sẵn sàng";
+            _btnReady.BackColor = _isReady ? Color.DarkGoldenrod : _forestGreen;
+
+            string modeName = _searchIsRanked ? "Xếp hạng" : "Đấu thường";
+            _lblRoomHint.Text = $"Tìm thấy trận {modeName}! Xác nhận sẵn sàng trong {Math.Max(0, remainingSeconds)}s...";
+            SetStatus($"Tìm thấy trận {modeName} — còn {Math.Max(0, remainingSeconds)}s để bấm Sẵn sàng (chưa sẵn sàng sẽ bị cấm tìm trận {Protocol.MatchPenaltySeconds}s).", false);
+            return;
+        }
+
         _btnStartGame.Visible = isHost;
         _btnReady.Visible = !isHost;
 
         if (isHost)
         {
-            bool enoughPlayers = members.Count >= 2 && members.Count <= 4;
-            _btnStartGame.Enabled = enoughPlayers && allGuestsReady;
+            bool enoughPlayers = members.Count >= Protocol.MinPlayers && members.Count <= Protocol.MaxPlayers;
+            _btnStartGame.Enabled = enoughPlayers && allPlayersReady;
             _lblRoomHint.Text = !enoughPlayers
-                ? "Cần tối thiểu 2 người chơi để bắt đầu."
-                : !allGuestsReady
+                ? $"Cần tối thiểu {Protocol.MinPlayers} người chơi để bắt đầu."
+                : !allPlayersReady
                     ? "Đang chờ tất cả thành viên bấm Sẵn sàng..."
                     : "Tất cả đã sẵn sàng! Bạn có thể bắt đầu ván đấu.";
         }
         else
         {
+            _btnReady.Enabled = true;
             _btnReady.Text = _isReady ? "Hủy sẵn sàng" : "Sẵn sàng";
             _btnReady.BackColor = _isReady ? Color.DarkGoldenrod : _forestGreen;
             _lblRoomHint.Text = _isReady
                 ? "Bạn đã sẵn sàng. Đang chờ chủ phòng bắt đầu..."
                 : "Bấm \"Sẵn sàng\" khi bạn đã chuẩn bị xong.";
-        }
-
-        // Chuyển sang ván chơi khi Server đổi trạng thái phòng sang IN_GAME
-        if (status == WireStatus.InGame)
-        {
-            SetStatus("Ván đấu đã bắt đầu! (Sẵn sàng mở GameForm ở Giai đoạn 7)", false);
-            MessageBox.Show(
-                $"Phòng {roomCode} đã bắt đầu ván đấu với {members.Count} người chơi!\n" +
-                "Ở Giai đoạn 7, màn hình này sẽ tự động mở bàn chơi bản đồ Việt Nam.",
-                "Bắt đầu ván đấu",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
         }
     }
 
@@ -1266,8 +1574,8 @@ public partial class LobbyForm : Form
         _footerPanel.Visible = !string.IsNullOrWhiteSpace(text);
 
         _statusTimer.Stop();
-        if (!isError && !_btnReconnect.Visible)
-            _statusTimer.Start();   // thông báo thường tự ẩn sau 4 giây
+        if (!isError && !_btnReconnect.Visible && !_isSearchingMatch && !_isReadyCheckRoom)
+            _statusTimer.Start();
     }
 
     private async Task HandleLogoutAsync(Button btnLogout)
@@ -1281,6 +1589,8 @@ public partial class LobbyForm : Form
         if (confirm != DialogResult.Yes)
             return;
 
+        _voluntaryLogout = true;
+        await CancelMatchQuietlyIfNeededAsync();
         btnLogout.Enabled = false;
 
         try
@@ -1300,5 +1610,10 @@ public partial class LobbyForm : Form
 
         DialogResult = DialogResult.Retry;
         Close();
+    }
+
+    private void LobbyForm_Load(object sender, EventArgs e)
+    {
+
     }
 }

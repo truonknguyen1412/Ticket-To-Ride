@@ -205,7 +205,7 @@ public sealed class GameClient : IDisposable
         finally { _writeLock.Release(); }
     }
 
-    // ------------------------------------------------------------ API phòng chờ
+    // ------------------------------------------------------------ API phòng chờ & ghép trận
 
     /// <returns>Mã phòng 6 chữ số.</returns>
     public async Task<string> CreateRoomAsync()
@@ -224,6 +224,12 @@ public sealed class GameClient : IDisposable
     public Task StartGameAsync() => RequestAsync(MessageTypes.StartGame);
 
     public Task LeaveRoomAsync() => RequestAsync(MessageTypes.LeaveRoom);
+
+    public Task FindMatchAsync(bool isRanked) =>
+        RequestAsync(MessageTypes.FindMatch, new FindMatchPayload(isRanked));
+
+    public Task CancelMatchAsync() =>
+        RequestAsync(MessageTypes.CancelMatch);
 
     /// <summary>Gửi khi phát hiện lệch phiên bản trạng thái ván đấu.</summary>
     public Task RequestSyncAsync(long stateVersion) =>

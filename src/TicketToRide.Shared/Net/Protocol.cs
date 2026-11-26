@@ -8,6 +8,8 @@ public static class Protocol
     public const int HeartbeatSeconds = 15;          // client gửi PING mỗi 15 giây
     public const int DeadAfterSeconds = 45;          // 45 giây không hoạt động => mất kết nối
     public const int LobbyGraceSeconds = 30;         // giữ chỗ ở phòng chờ
+    public const int ReadyCheckSeconds = 20;         // đếm ngược xác nhận sẵn sàng khi tìm đủ người
+    public const int MatchPenaltySeconds = 60;       // cấm ghép trận Rank/Thường nếu không bấm sẵn sàng
     public const int OutboxCapacity = 256;           // hàng đợi ghi mỗi Connection
     public const int MinPlayers = 2;
     public const int MaxPlayers = 4;
@@ -41,6 +43,14 @@ public static class MessageTypes
     public const string PlayerConnection = "PLAYER_CONNECTION";
     public const string SyncRequest = "SYNC_REQUEST";
 
+    // Ghép trận tự động (Xếp hạng / Đấu thường)
+    public const string FindMatch = "FIND_MATCH";
+    public const string CancelMatch = "CANCEL_MATCH";
+    public const string MatchStatus = "MATCH_STATUS";
+    public const string MatchFound = "MATCH_FOUND";
+    public const string ReadyCheckUpdated = "READY_CHECK_UPDATED";
+    public const string MatchPenalty = "MATCH_PENALTY";
+
     // Xác thực (mở rộng so với tài liệu giao thức): chạy trước khi có phiên
     public const string AuthRegister = "AUTH_REGISTER";   // idToken Firebase + username -> WELCOME
     public const string AuthLogin = "AUTH_LOGIN";         // idToken Firebase -> WELCOME
@@ -70,6 +80,9 @@ public static class ErrorCodes
     public const string NotAllReady = "NOT_ALL_READY";
     public const string NotInRoom = "NOT_IN_ROOM";
     public const string AlreadyInRoom = "ALREADY_IN_ROOM";
+    public const string AlreadyInQueue = "ALREADY_IN_QUEUE";
+    public const string NotInQueue = "NOT_IN_QUEUE";
+    public const string MatchBanned = "MATCH_BANNED";
 
     // Xác thực
     public const string AuthRequired = "AUTH_REQUIRED";          // chưa đăng nhập mà gửi lệnh cần phiên

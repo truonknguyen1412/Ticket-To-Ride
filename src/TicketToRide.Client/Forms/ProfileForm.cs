@@ -207,6 +207,11 @@ public class ProfileForm : Form
         return row;
     }
 
+    private void InitializeComponent()
+    {
+
+    }
+
     private static Label Cell(string text, Color color, bool bold,
         ContentAlignment align = ContentAlignment.MiddleLeft) => new()
         {

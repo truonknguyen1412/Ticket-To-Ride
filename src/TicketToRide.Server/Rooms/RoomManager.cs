@@ -9,16 +9,35 @@ public sealed class RoomManager
     readonly ConcurrentDictionary<string, Room> _rooms = new();          // roomCode -> Room
     readonly ConcurrentDictionary<string, string> _roomOfPlayer = new(); // playerId -> roomCode
     readonly SessionManager _sessions;
+    readonly SqlMatchPersistence? _persistence;
 
-    public RoomManager(SessionManager sessions) => _sessions = sessions;
+    public RoomManager(SessionManager sessions, SqlMatchPersistence? persistence = null)
+    {
+        _sessions = sessions;
+        _persistence = persistence;
+    }
 
     /// <summary>Mã phòng 6 chữ số, TryAdd, trùng thì thử lại tối đa 10 lần.</summary>
-    public Room? Create(Session host)
+    public Room? Create(
+        Session host,
+        IGameEngine? engine = null,
+        bool isMatchReadyCheck = false,
+        bool isRankedMatch = false,
+        MatchmakingService? matchmaking = null)
     {
         for (int i = 0; i < 10; i++)
         {
             var code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
-            var room = new Room(code, host, _sessions, this);
+            var room = new Room(
+                code,
+                host,
+                _sessions,
+                this,
+                engine ?? new TurnGameEngine(),
+                _persistence,
+                isMatchReadyCheck,
+                isRankedMatch,
+                matchmaking);
             if (_rooms.TryAdd(code, room))
             {
                 Bind(host, code);

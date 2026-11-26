@@ -1,20 +1,41 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <UseWindowsForms>true</UseWindowsForms>
-    <ImplicitUsings>enable</ImplicitUsings>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<ApplicationIcon>TicketToRide.ico</ApplicationIcon>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\TicketToRide.Shared\TicketToRide.Shared.csproj" />
-    <ProjectReference Include="..\TicketToRide.ClientCore\TicketToRide.ClientCore.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\TicketToRide.Shared\TicketToRide.Shared.csproj" />
+		<ProjectReference Include="..\TicketToRide.ClientCore\TicketToRide.ClientCore.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Assets\" />
-  </ItemGroup>
+	<ItemGroup>
+		<Folder Include="Controls\" />
+		<Folder Include="Assets\" />
+	</ItemGroup>
+	<ItemGroup>
+		<!-- Khi chạy Debug trên máy 1 -> tự lấy server.local.txt xuất thành server.txt -->
+		<None Include="server.local.txt" Condition="'$(Configuration)' == 'Debug'">
+			<Link>server.txt</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+
+		<!-- Khi Publish (Release) gửi máy 2 -> tự lấy server.pub.txt xuất thành server.txt -->
+		<None Include="server.pub.txt" Condition="'$(Configuration)' == 'Release'">
+			<Link>server.txt</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+		</None>
+
+		<None Update="TicketToRide.ico">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+		</None>
+	</ItemGroup>
 
 </Project>
