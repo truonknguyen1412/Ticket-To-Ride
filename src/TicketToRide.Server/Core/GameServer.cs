@@ -11,7 +11,9 @@ public sealed class GameServer
     readonly ServerOptions _options;
     readonly ServerLogger _log;
     readonly SessionManager _sessions;
+    readonly SqlMatchPersistence _matchPersistence;
     readonly RoomManager _rooms;
+    readonly MatchmakingService _matchmaking;
     readonly AccountStore _accounts;
     readonly Dispatcher _dispatcher;
     readonly ConcurrentDictionary<Guid, Connection> _connections = new();
@@ -23,12 +25,14 @@ public sealed class GameServer
         _options = options;
         _log = log;
         _sessions = new SessionManager(log);
-        _rooms = new RoomManager(_sessions);
         _accounts = new AccountStore(options.SqlConnectionString);
+        _matchPersistence = new SqlMatchPersistence(_accounts, options.SqlConnectionString, log);
+        _rooms = new RoomManager(_sessions, _matchPersistence);
+        _matchmaking = new MatchmakingService(_rooms, log);
 
         IIdentityProvider? idp = options.FirebaseApiKey != null ? new FirebaseIdentityProvider(options.FirebaseApiKey) : null;
-        var auth = new AuthService(_sessions, _rooms, _accounts, idp, log);
-        _dispatcher = new Dispatcher(_sessions, _rooms, auth, options, log);
+        var auth = new AuthService(_sessions, _rooms, _accounts, idp, log, _matchmaking);
+        _dispatcher = new Dispatcher(_sessions, _rooms, auth, _matchmaking, options, log);
     }
 
     public void Start()
@@ -61,6 +65,7 @@ public sealed class GameServer
 
         _ = AcceptLoopAsync(_listener, _cts.Token);
         _ = WatchdogLoopAsync(_cts.Token);
+        _ = MatchmakingLoopAsync(_cts.Token);
     }
 
     public void Stop()
@@ -91,7 +96,6 @@ public sealed class GameServer
         tcp.NoDelay = true;
         var conn = new Connection(tcp);
         _connections[conn.Id] = conn;
-        _log.Info("KET NOI", $"+ {conn.RemoteEndPoint} (đang mở: {_connections.Count})");
         try
         {
             await conn.RunAsync(_dispatcher.Handle, ct);
@@ -100,7 +104,6 @@ public sealed class GameServer
         {
             _connections.TryRemove(conn.Id, out _);
             OnClosed(conn);
-            _log.Info("KET NOI", $"- {conn.RemoteEndPoint} (đang mở: {_connections.Count})");
         }
     }
 
@@ -111,11 +114,11 @@ public sealed class GameServer
         if (s == null) return;                              // chưa đăng nhập hoặc đã đăng xuất
         if (!ReferenceEquals(s.Conn, conn)) return;         // đã nối lại bằng kết nối khác
 
+        _matchmaking.RemovePlayer(s.PlayerId);
         s.Conn = null;
         var room = _rooms.FindByPlayer(s.PlayerId);
         if (room == null)
         {
-            // Không ở phòng nào: không có gì để nối lại -> thu hồi token luôn
             _log.Info("PHIEN", $"\"{s.PlayerName}\" ngắt kết nối khi không ở phòng (không đăng xuất)");
             _sessions.Remove(s, "mất kết nối khi không ở phòng");
             return;
@@ -143,6 +146,19 @@ public sealed class GameServer
                     }
                 }
                 _sessions.PurgeExpired();
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    async Task MatchmakingLoopAsync(CancellationToken ct)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(ct))
+            {
+                _matchmaking.Tick();
             }
         }
         catch (OperationCanceledException) { }

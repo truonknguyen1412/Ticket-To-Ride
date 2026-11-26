@@ -14,14 +14,16 @@ public sealed class Dispatcher
     readonly SessionManager _sessions;
     readonly RoomManager _rooms;
     readonly AuthService _auth;
+    readonly MatchmakingService _matchmaking;
     readonly ServerOptions _options;
     readonly ServerLogger _log;
 
-    public Dispatcher(SessionManager sessions, RoomManager rooms, AuthService auth, ServerOptions options, ServerLogger log)
+    public Dispatcher(SessionManager sessions, RoomManager rooms, AuthService auth, MatchmakingService matchmaking, ServerOptions options, ServerLogger log)
     {
         _sessions = sessions;
         _rooms = rooms;
         _auth = auth;
+        _matchmaking = matchmaking;
         _options = options;
         _log = log;
     }
@@ -93,6 +95,12 @@ public sealed class Dispatcher
             case MessageTypes.Bye:
                 conn.Close();                           // xử lý như mất kết nối; muốn thu hồi token phải gửi AUTH_LOGOUT
                 break;
+            case MessageTypes.FindMatch:
+                OnFindMatch(conn, session, msg);
+                break;
+            case MessageTypes.CancelMatch:
+                OnCancelMatch(conn, session, msg);
+                break;
             case MessageTypes.CreateRoom:
                 OnCreateRoom(conn, session, msg);
                 break;
@@ -102,6 +110,12 @@ public sealed class Dispatcher
             case MessageTypes.SetReady:
             case MessageTypes.StartGame:
             case MessageTypes.LeaveRoom:
+            case "SYNC_REQUEST":
+            case "RECOVERY_CONFIRM":
+            case "KEEP_TICKETS":
+            case "DRAW_CARD":
+            case "CLAIM_ROUTE":
+            case "DRAW_TICKETS":
                 Forward(conn, session, msg);
                 break;
             default:
@@ -131,6 +145,7 @@ public sealed class Dispatcher
             if (_sessions.IsExpired(existing))
             {
                 _log.Error(Tag, $"{conn.RemoteEndPoint} nối lại bằng token {ServerLogger.Mask(token)} của \"{existing.PlayerName}\": token đã hết hạn");
+                _matchmaking.RemovePlayer(existing.PlayerId);
                 _rooms.FindByPlayer(existing.PlayerId)?.Inbox.Writer.TryWrite(new MemberLoggedOut(existing.PlayerId));
                 _sessions.Remove(existing, "token hết hạn khi nối lại");
                 Reply(conn, msg.ReqId, ErrorCodes.TokenExpired, "resumeToken đã hết hạn, hãy đăng nhập lại");
@@ -177,8 +192,36 @@ public sealed class Dispatcher
                 (int)Math.Max(0, (s.ExpiresAtUtc - DateTime.UtcNow).TotalSeconds)),
             req.ReqId).ToJson());
 
+    void OnFindMatch(Connection conn, Session session, Message msg)
+    {
+        var p = msg.ReadPayload<FindMatchPayload>();
+        bool isRanked = p?.IsRanked ?? true;
+
+        var (ok, errCode, errText) = _matchmaking.Enqueue(session, isRanked);
+        if (!ok)
+        {
+            Reply(conn, msg.ReqId, errCode, errText);
+            return;
+        }
+
+        conn.Enqueue(Message.Create(MessageTypes.Ack, null, msg.ReqId).ToJson());
+    }
+
+    void OnCancelMatch(Connection conn, Session session, Message msg)
+    {
+        if (!_matchmaking.Cancel(session.PlayerId))
+        {
+            Reply(conn, msg.ReqId, ErrorCodes.NotInQueue, "Bạn không ở trong hàng chờ ghép trận");
+            return;
+        }
+
+        conn.Enqueue(Message.Create(MessageTypes.Ack, null, msg.ReqId).ToJson());
+    }
+
     void OnCreateRoom(Connection conn, Session session, Message msg)
     {
+        _matchmaking.RemovePlayer(session.PlayerId);
+
         if (_rooms.FindByPlayer(session.PlayerId) != null)
         {
             Reply(conn, msg.ReqId, ErrorCodes.AlreadyInRoom, "Bạn đang ở trong một phòng");
@@ -196,6 +239,8 @@ public sealed class Dispatcher
 
     void OnJoinRoom(Connection conn, Session session, Message msg)
     {
+        _matchmaking.RemovePlayer(session.PlayerId);
+
         var p = msg.ReadPayload<JoinRoomPayload>();
         var code = p?.RoomCode?.Trim();
         if (string.IsNullOrEmpty(code)) { Reply(conn, msg.ReqId, ErrorCodes.BadPayload, "Thiếu roomCode"); return; }

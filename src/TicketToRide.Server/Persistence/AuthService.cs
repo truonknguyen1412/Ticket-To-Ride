@@ -23,15 +23,17 @@ public sealed class AuthService
     readonly AccountStore _accounts;
     readonly IIdentityProvider? _idp;
     readonly ServerLogger _log;
+    readonly MatchmakingService? _matchmaking;
     readonly ConcurrentDictionary<string, DateTime> _forgotAt = new();   // email -> lần xin gần nhất
 
-    public AuthService(SessionManager sessions, RoomManager rooms, AccountStore accounts, IIdentityProvider? idp, ServerLogger log)
+    public AuthService(SessionManager sessions, RoomManager rooms, AccountStore accounts, IIdentityProvider? idp, ServerLogger log, MatchmakingService? matchmaking = null)
     {
         _sessions = sessions;
         _rooms = rooms;
         _accounts = accounts;
         _idp = idp;
         _log = log;
+        _matchmaking = matchmaking;
     }
 
     // ------------------------------------------------------------ đăng ký
@@ -69,9 +71,9 @@ public sealed class AuthService
         }
         _log.Step(TagReg, $"Đã lưu hồ sơ vào SQL Server (bảng Accounts): \"{account.Username}\" <{account.Email}> uid={user.Uid}");
 
-        var session = Establish(conn, account);
+        var (session, activeRoom) = Establish(conn, account);
         conn.AuthFailures = 0;
-        SendWelcome(conn, msg, session);
+        SendWelcome(conn, msg, session, activeRoom);
         _log.Ok(TagReg, $"Đăng ký thành công: \"{account.Username}\" <{account.Email}>, tự đăng nhập, token {ServerLogger.Mask(session.ResumeToken)}");
     }
 
@@ -99,9 +101,9 @@ public sealed class AuthService
         if (created)
             _log.Warn(TagLogin, $"uid={user.Uid} chưa có hồ sơ trên server (tạo trực tiếp ở Firebase) -> tự tạo hồ sơ \"{account.Username}\"");
 
-        var session = Establish(conn, account);
+        var (session, activeRoom) = Establish(conn, account);
         conn.AuthFailures = 0;
-        SendWelcome(conn, msg, session);
+        SendWelcome(conn, msg, session, activeRoom);
         _log.Ok(TagLogin, $"Đăng nhập thành công: \"{account.Username}\" <{account.Email}>, lần thứ {account.LoginCount}, token {ServerLogger.Mask(session.ResumeToken)}");
     }
 
@@ -154,6 +156,8 @@ public sealed class AuthService
     {
         _log.Info(TagLogout, $"{conn.RemoteEndPoint} yêu cầu đăng xuất: \"{session.PlayerName}\" (playerId {session.PlayerId[..8]})");
 
+        _matchmaking?.RemovePlayer(session.PlayerId);
+
         var room = _rooms.FindByPlayer(session.PlayerId);
         if (room != null)
         {
@@ -171,7 +175,6 @@ public sealed class AuthService
 
     // ------------------------------------------------------------ dùng chung
 
-    /// <summary>Kiểm tra payload + nhờ Firebase xác minh idToken. null nếu thất bại (đã trả lỗi cho client).</summary>
     async Task<IdentityUser?> VerifyAsync(Connection conn, Message msg, string tag, string? idToken)
     {
         if (string.IsNullOrWhiteSpace(idToken))
@@ -206,19 +209,20 @@ public sealed class AuthService
     }
 
     /// <summary>Gắn kết nối vào phiên của tài khoản: tái sử dụng (xoay token, đá kết nối cũ) hoặc cấp phiên mới.</summary>
-    Session Establish(Connection conn, AccountRecord account)
+    (Session Session, Room? ActiveRoom) Establish(Connection conn, AccountRecord account)
     {
         var existing = _sessions.FindByAccount(account.Uid);
         if (existing == null)
         {
-            var created = _sessions.Create(account.Username, account.Uid, account.Email);
+            var created = _sessions.Create(account.Username, account.Uid, account.Email, account.AccountId, account.RankPoints);
             created.Conn = conn;
             conn.Session = created;
-            return created;
+            return (created, null);
         }
 
         var old = existing.Conn;
         _sessions.Rotate(existing);                  // token cũ chết, token mới được cấp
+        existing.RankPoints = account.RankPoints;
         existing.Conn = conn;
         existing.State = ConnState.Connected;
         conn.Session = existing;
@@ -228,20 +232,26 @@ public sealed class AuthService
             _log.Warn(TagLogin, $"\"{existing.PlayerName}\" đăng nhập ở nơi khác -> ngắt kết nối cũ {old.RemoteEndPoint}");
             old.Session = null;
             old.Enqueue(Message.Create(MessageTypes.Error,
-                new ErrorPayload(ErrorCodes.SessionReplaced, "Tài khoản vừa đăng nhập ở nơi khác"), null).ToJson());
-            _ = Task.Delay(300).ContinueWith(_ => old.Close(), TaskScheduler.Default);   // chờ tin nhắn kịp gửi
+                new ErrorPayload(ErrorCodes.SessionReplaced, "Tài khoản đã được đăng nhập trên một thiết bị khác."), null).ToJson());
+            _ = Task.Delay(300).ContinueWith(_ => old.Close(), TaskScheduler.Default);
         }
-        else if (old == null)
-        {
-            _rooms.FindByPlayer(existing.PlayerId)?.Inbox.Writer.TryWrite(new ConnectionRestored(existing.PlayerId));
-        }
-        return existing;
+
+        var activeRoom = _rooms.FindByPlayer(existing.PlayerId);
+        activeRoom?.SendCurrentStateTo(existing);
+
+        return (existing, activeRoom);
     }
 
-    static void SendWelcome(Connection conn, Message req, Session s) =>
+    static void SendWelcome(Connection conn, Message req, Session s, Room? activeRoom) =>
         conn.Enqueue(Message.Create(MessageTypes.Welcome,
-            new WelcomePayload(s.PlayerId, s.ResumeToken, s.PlayerName, s.Email,
-                (int)Math.Max(0, (s.ExpiresAtUtc - DateTime.UtcNow).TotalSeconds)),
+            new WelcomePayload(
+                s.PlayerId,
+                s.ResumeToken,
+                s.PlayerName,
+                s.Email,
+                (int)Math.Max(0, (s.ExpiresAtUtc - DateTime.UtcNow).TotalSeconds),
+                activeRoom?.Code,
+                activeRoom?.WireRoomStatus),
             req.ReqId).ToJson());
 
     void Fail(Connection conn, Message msg, string tag, string code, string text, bool countFailure = true)

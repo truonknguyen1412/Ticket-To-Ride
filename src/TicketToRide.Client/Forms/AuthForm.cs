@@ -37,17 +37,15 @@ public partial class AuthForm : Form
         InitializeComponent();
         _gameClient = new GameClient(); // Tạo sau InitializeComponent để nhận UI SynchronizationContext
         SetupCustomUi();
-		// Đưa các ô nhập lên trên nhãn để nhãn không che đường viền
-		foreach (var t in new[] { _txtUsername, _txtEmail, _txtPassword, _txtConfirmPassword })
-			t.BringToFront();
-		Theme.FixTextRendering(this);
-		SwitchMode(AuthMode.Login);
+        // Đưa các ô nhập lên trên nhãn để nhãn không che đường viền
+        foreach (var t in new[] { _txtUsername, _txtEmail, _txtPassword, _txtConfirmPassword })
+            t.BringToFront();
+        Theme.FixTextRendering(this);
+        SwitchMode(AuthMode.Login);
     }
-
 
     private void SetupCustomUi()
     {
-        // Kích thước cửa sổ
         Text = "Ticket to Ride Vietnam - Xác thực";
         ClientSize = new Size(960, 1020);
         StartPosition = FormStartPosition.CenterScreen;
@@ -62,10 +60,6 @@ public partial class AuthForm : Form
         Color green = Color.FromArgb(37, 74, 58);
         Color paper = Color.FromArgb(255, 251, 240);
         Color darkText = Color.FromArgb(55, 42, 32);
-
-        // =========================
-        // 1. HEADER - BẢNG HIỆU GAME
-        // =========================
 
         Panel header = new Panel
         {
@@ -106,26 +100,24 @@ public partial class AuthForm : Form
 
         header.Controls.AddRange(new Control[]
         {
-        lblJourney,
-        lblGameTitle,
-        lblCountry
+            lblJourney,
+            lblGameTitle,
+            lblCountry
         });
 
-        // Các màu toa tàu trang trí
         Color[] trainColors =
         {
-        Color.FromArgb(195, 54, 54),
-        Color.FromArgb(45, 105, 170),
-        Color.FromArgb(39, 131, 74),
-        Color.FromArgb(231, 195, 65),
-        Color.FromArgb(55, 42, 32),
-        Color.FromArgb(255, 251, 240),
-        Color.FromArgb(226, 125, 45),
-        Color.FromArgb(205, 130, 165)
-    };
+            Color.FromArgb(195, 54, 54),
+            Color.FromArgb(45, 105, 170),
+            Color.FromArgb(39, 131, 74),
+            Color.FromArgb(231, 195, 65),
+            Color.FromArgb(55, 42, 32),
+            Color.FromArgb(255, 251, 240),
+            Color.FromArgb(226, 125, 45),
+            Color.FromArgb(205, 130, 165)
+        };
 
         int startX = 95;
-
         foreach (Color trainColor in trainColors)
         {
             Panel trainCar = new Panel
@@ -142,10 +134,6 @@ public partial class AuthForm : Form
 
         Controls.Add(header);
 
-        // =========================
-        // 2. ĐƯỜNG VIỀN VÀNG
-        // =========================
-
         Panel goldLine = new Panel
         {
             Location = new Point(0, 320),
@@ -154,10 +142,6 @@ public partial class AuthForm : Form
         };
 
         Controls.Add(goldLine);
-
-        // =========================
-        // 3. CARD ĐĂNG NHẬP
-        // =========================
 
         _cardPanel = new Panel
         {
@@ -305,25 +289,21 @@ public partial class AuthForm : Form
 
         _cardPanel.Controls.AddRange(new Control[]
         {
-        _lblTitle,
-        _lblSubtitle,
-        _lblUsername,
-        _txtUsername,
-        _lblEmail,
-        _txtEmail,
-        _lblPassword,
-        _txtPassword,
-        _lblConfirmPassword,
-        _txtConfirmPassword,
-        _btnPrimary,
-        _lblStatus,
-        _lnkForgotPassword,
-        _lnkSwitchMode
+            _lblTitle,
+            _lblSubtitle,
+            _lblUsername,
+            _txtUsername,
+            _lblEmail,
+            _txtEmail,
+            _lblPassword,
+            _txtPassword,
+            _lblConfirmPassword,
+            _txtConfirmPassword,
+            _btnPrimary,
+            _lblStatus,
+            _lnkForgotPassword,
+            _lnkSwitchMode
         });
-
-        // =========================
-        // 4. ĐƯỜNG RAY Ở CHÂN FORM
-        // =========================
 
         TrackStrip trackStrip = new TrackStrip
         {
@@ -335,8 +315,6 @@ public partial class AuthForm : Form
         Controls.Add(trackStrip);
     }
 
-
-
     private void SwitchMode(AuthMode mode)
     {
         _currentMode = mode;
@@ -347,7 +325,6 @@ public partial class AuthForm : Form
         int left = 70;
         int inputWidth = 660;
 
-        // Ẩn tất cả control trước khi thiết lập chế độ
         _lblUsername.Visible = false;
         _txtUsername.Visible = false;
         _lblEmail.Visible = false;
@@ -439,7 +416,6 @@ public partial class AuthForm : Form
             _lnkSwitchMode.Location = new Point(left, 440);
         }
     }
-
 
     private async Task HandlePrimaryActionAsync()
     {
@@ -542,10 +518,25 @@ public partial class AuthForm : Form
             SessionManager.ResumeToken = welcome.ResumeToken;
 
             Hide();
-            using var lobbyForm = new LobbyForm();
-            var dialogResult = lobbyForm.ShowDialog();
+            using var lobbyForm = new LobbyForm(welcome.ActiveRoomCode, welcome.ActiveRoomStatus);
+            var dialogResult = lobbyForm.ShowDialog(this);
 
-            if (dialogResult == DialogResult.Retry)
+            if (dialogResult == DialogResult.Abort || lobbyForm.WasKickedByOtherDevice)
+            {
+                var kickMessage = lobbyForm.KickedMessage ?? "Tài khoản của bạn đã được đăng nhập trên một thiết bị khác.";
+                _firebaseAuth.SignOut();
+                SessionManager.Clear();
+
+                using var kickedDlg = new SessionReplacedForm(kickMessage);
+                kickedDlg.ShowDialog(this);
+
+                _gameClient = new GameClient();
+                _txtPassword.Clear();
+                _txtConfirmPassword.Clear();
+                SwitchMode(AuthMode.Login);
+                Show();
+            }
+            else if (dialogResult == DialogResult.Retry)
             {
                 _gameClient = new GameClient();
                 _txtPassword.Clear();
@@ -589,5 +580,10 @@ public partial class AuthForm : Form
     {
         _lblStatus.ForeColor = Color.SeaGreen;
         _lblStatus.Text = msg;
+    }
+
+    private void AuthForm_Load(object sender, EventArgs e)
+    {
+
     }
 }
