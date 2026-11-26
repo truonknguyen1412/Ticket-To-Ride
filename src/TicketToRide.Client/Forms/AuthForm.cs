@@ -249,6 +249,14 @@ public partial class AuthForm : Form
         _btnPrimary.FlatAppearance.BorderSize = 2;
         _btnPrimary.FlatAppearance.BorderColor = darkText;
         _btnPrimary.Click += async (_, _) => await HandlePrimaryActionAsync();
+        // Nhấn Enter ở ô Email
+        _txtEmail.KeyDown += TxtEmail_KeyDown;
+
+        // Nhấn Enter ở ô Mật khẩu
+        _txtPassword.KeyDown += TxtPassword_KeyDown;
+
+        // Nhấn Enter ở ô Nhập lại mật khẩu
+        _txtConfirmPassword.KeyDown += TxtConfirmPassword_KeyDown;
 
         _lblStatus = new Label
         {
@@ -581,7 +589,82 @@ public partial class AuthForm : Form
         _lblStatus.ForeColor = Color.SeaGreen;
         _lblStatus.Text = msg;
     }
+    // ======================================================
+    // XỬ LÝ PHÍM ENTER TRONG CÁC Ô NHẬP LIỆU
+    // ======================================================
 
+    /// <summary>
+    /// Nhấn Enter ở ô Email:
+    /// - Đăng nhập: chuyển xuống ô Mật khẩu.
+    /// - Đăng ký: chuyển xuống ô Mật khẩu.
+    /// - Quên mật khẩu: thực hiện gửi email khôi phục.
+    /// </summary>
+    private async void TxtEmail_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode != Keys.Enter)
+            return;
+
+        e.SuppressKeyPress = true;
+        e.Handled = true;
+
+        // Đang ở chế độ Quên mật khẩu
+        // thì Enter sẽ gửi yêu cầu khôi phục mật khẩu.
+        if (_currentMode == AuthMode.ForgotPassword)
+        {
+            await HandlePrimaryActionAsync();
+            return;
+        }
+
+        // Đang đăng nhập hoặc đăng ký:
+        // chuyển con trỏ xuống ô Mật khẩu.
+        _txtPassword.Focus();
+    }
+
+    /// <summary>
+    /// Nhấn Enter ở ô Mật khẩu:
+    /// - Đăng nhập: thực hiện đăng nhập.
+    /// - Đăng ký: chuyển xuống ô Nhập lại mật khẩu.
+    /// </summary>
+    private async void TxtPassword_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode != Keys.Enter)
+            return;
+
+        e.SuppressKeyPress = true;
+        e.Handled = true;
+
+        if (_currentMode == AuthMode.Register)
+        {
+            // Đăng ký cần nhập lại mật khẩu.
+            _txtConfirmPassword.Focus();
+            return;
+        }
+
+        // Chế độ đăng nhập:
+        // gọi đúng hàm đang được sử dụng bởi nút ĐĂNG NHẬP.
+        if (_currentMode == AuthMode.Login)
+        {
+            await HandlePrimaryActionAsync();
+        }
+    }
+
+    /// <summary>
+    /// Nhấn Enter ở ô Nhập lại mật khẩu:
+    /// thực hiện đăng ký tài khoản.
+    /// </summary>
+    private async void TxtConfirmPassword_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode != Keys.Enter)
+            return;
+
+        e.SuppressKeyPress = true;
+        e.Handled = true;
+
+        if (_currentMode == AuthMode.Register)
+        {
+            await HandlePrimaryActionAsync();
+        }
+    }
     private void AuthForm_Load(object sender, EventArgs e)
     {
 

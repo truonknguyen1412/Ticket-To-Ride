@@ -27,3 +27,8 @@ public record MatchPenaltyPayload(int RemainingSeconds, string Message);
 public record PlayerPublic(string PlayerId, string Name, string Status, bool Ready, bool IsHost);
 public record RoomUpdatedPayload(string RoomCode, string Status, string HostId, List<PlayerPublic> Players);
 public record PlayerConnectionPayload(string PlayerId, string Status);
+// Thông tin thống kê tài khoản trả về khi Client mở hồ sơ.
+public record ProfileStatsPayload(
+    int RankPoints,
+    int Reputation
+);

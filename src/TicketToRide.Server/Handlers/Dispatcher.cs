@@ -88,6 +88,9 @@ public sealed class Dispatcher
             case MessageTypes.AuthLogout:
                 _auth.OnLogout(conn, session, msg);
                 break;
+            case MessageTypes.GetProfile:
+                await _auth.OnGetProfileAsync(conn, session, msg);
+                break;
             case MessageTypes.Ping:
                 _sessions.Renew(session);               // còn hoạt động thì token còn sống
                 conn.Enqueue(Message.Create(MessageTypes.Pong, null, msg.ReqId).ToJson());

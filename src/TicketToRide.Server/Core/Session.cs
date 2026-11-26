@@ -41,5 +41,5 @@ public sealed class Session
     public Connection? Conn { get; set; }
     public ConnState State { get; set; } = ConnState.Connected;
     public string? RoomCode { get; set; }
-    public int RankPoints { get; set; } = 100;
+    public int RankPoints { get; set; } = 0;
 }

@@ -251,7 +251,8 @@ public partial class LobbyForm : Form
             ForeColor = Color.White,
             Dock = DockStyle.Bottom,
             Height = 30,
-            TextAlign = ContentAlignment.MiddleRight
+            TextAlign = ContentAlignment.MiddleRight,
+            Margin = new Padding(0, 0, 0, 5)
         };
 
         var lblRank = new Label
@@ -264,8 +265,8 @@ public partial class LobbyForm : Form
             TextAlign = ContentAlignment.MiddleRight
         };
 
-        userInfoPanel.Controls.Add(lblRank);
         userInfoPanel.Controls.Add(lblUsername);
+        userInfoPanel.Controls.Add(lblRank);
 
         var avatar = new CircleAvatar
         {

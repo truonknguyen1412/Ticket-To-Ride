@@ -1,6 +1,7 @@
 ﻿using System.Drawing.Drawing2D;
 using TicketToRide.Client.Controls;
 using TicketToRide.Client.Utils;
+using TicketToRide.Shared.Models;
 
 namespace TicketToRide.Client.Forms;
 
@@ -68,7 +69,7 @@ public class ProfileForm : Form
         for (int i = 0; i < 3; i++)
             stats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
         stats.Controls.Add(MakeStatBox("ĐIỂM HẠNG", out _lblRank, 20F), 0, 0);
-        stats.Controls.Add(MakeStatBox("BẬC HẠNG", out _lblTier, 13F), 1, 0);
+        stats.Controls.Add(MakeStatBox("BẬC HẠNG", out _lblTier, 11F), 1, 0);
         stats.Controls.Add(MakeStatBox("UY TÍN", out _lblRep, 20F), 2, 0);
         statsHost.Controls.Add(stats);
 
@@ -106,6 +107,51 @@ public class ProfileForm : Form
         SetStats(null, null, null);
         SetHistory(Array.Empty<MatchRow>());
         Theme.FixTextRendering(this);
+        // Tải thống kê từ Server sau khi cửa sổ hồ sơ được hiển thị.
+        Shown += async (_, _) => await LoadProfileStatsAsync();
+    }
+    /// <summary>
+    /// Lấy thống kê tài khoản từ Server và hiển thị lên giao diện.
+    /// </summary>
+    private async Task LoadProfileStatsAsync()
+    {
+        var client = SessionManager.Client;
+
+        if (client == null)
+            return;
+
+        try
+        {
+            // Lấy dữ liệu mới nhất từ Server.
+            var profile = await client.GetProfileStatsAsync();
+
+            // Dựa vào điểm Rank để xác định bậc Rank.
+            string tierName = RankRules.GetTierName(
+                profile.RankPoints
+            );
+
+            // Hiển thị 3 thông tin lên giao diện.
+            SetStats(
+                profile.RankPoints,
+                tierName,
+                profile.Reputation
+            );
+        }
+        catch (Exception ex)
+        {
+            if (!IsDisposed)
+            {
+                _lblTier.Text = "Không tải được";
+
+                MessageBox.Show(
+                    this,
+                    $"Không thể tải thông tin hồ sơ từ máy chủ.\n\nChi tiết: {ex.Message}",
+                    "Lỗi tải hồ sơ",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning
+                );
+            }
+        }
     }
 
     /// <summary>Cập nhật 3 ô thống kê. Truyền null nếu chưa có dữ liệu.</summary>

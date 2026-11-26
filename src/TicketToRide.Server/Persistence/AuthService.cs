@@ -172,7 +172,84 @@ public sealed class AuthService
         conn.Enqueue(Message.Create(MessageTypes.Ack, new AuthAckPayload("Đã đăng xuất, token đã bị thu hồi"), msg.ReqId).ToJson());
         _log.Ok(TagLogout, $"Đăng xuất thành công: \"{session.PlayerName}\". Số phiên còn lại: {_sessions.Count}");
     }
+    // ------------------------------------------------------------ hồ sơ người chơi
 
+    /// <summary>
+    /// Đọc điểm Rank và Uy tín của tài khoản đang đăng nhập.
+    /// </summary>
+    public async Task OnGetProfileAsync(
+        Connection conn,
+        Session session,
+        Message msg)
+    {
+        // Kiểm tra phiên có gắn với tài khoản trong database hay không.
+        if (session.DbAccountId == null)
+        {
+            conn.Enqueue(Message.Create(
+                MessageTypes.Error,
+                new ErrorPayload(
+                    ErrorCodes.ProfileUnavailable,
+                    "Phiên hiện tại không gắn với tài khoản trong cơ sở dữ liệu."
+                ),
+                msg.ReqId
+            ).ToJson());
+
+            return;
+        }
+
+        try
+        {
+            // Lấy thông tin tài khoản từ SQL Server.
+            var account = await _accounts.FindByAccountIdAsync(
+                session.DbAccountId.Value
+            );
+
+            if (account == null)
+            {
+                conn.Enqueue(Message.Create(
+                    MessageTypes.Error,
+                    new ErrorPayload(
+                        ErrorCodes.ProfileUnavailable,
+                        "Không tìm thấy hồ sơ tài khoản."
+                    ),
+                    msg.ReqId
+                ).ToJson());
+
+                return;
+            }
+
+            // Đồng bộ điểm Rank đang lưu trong Session.
+            session.RankPoints = account.RankPoints;
+
+            // Tạo dữ liệu trả về Client.
+            var payload = new ProfileStatsPayload(
+                account.RankPoints,
+                account.Reputation
+            );
+
+            conn.Enqueue(Message.Create(
+                MessageTypes.ProfileStats,
+                payload,
+                msg.ReqId
+            ).ToJson());
+        }
+        catch (Exception ex)
+        {
+            _log.Error(
+                "HO SO",
+                $"Không tải được hồ sơ của {session.PlayerName}: {ex.Message}"
+            );
+
+            conn.Enqueue(Message.Create(
+                MessageTypes.Error,
+                new ErrorPayload(
+                    ErrorCodes.DbUnavailable,
+                    "Server không đọc được dữ liệu hồ sơ từ SQL Server."
+                ),
+                msg.ReqId
+            ).ToJson());
+        }
+    }
     // ------------------------------------------------------------ dùng chung
 
     async Task<IdentityUser?> VerifyAsync(Connection conn, Message msg, string tag, string? idToken)

@@ -11,7 +11,7 @@ public sealed class AccountRecord
     public string Username { get; set; } = "";
     public string? PasswordHash { get; set; }
     public int Reputation { get; set; } = 100;
-    public int RankPoints { get; set; } = 100;
+    public int RankPoints { get; set; } = 0;
     public DateTime CreatedAtUtc { get; set; }
     public string Uid { get; set; } = "";          // localId của Firebase
     public string Email { get; set; } = "";
@@ -190,7 +190,7 @@ WHERE AccountId = @id";
 INSERT INTO dbo.Accounts (Username, PasswordHash, Reputation, RankPoints, CreatedAtUtc, Uid, Email, LastLoginVN, LoginCount, CreatedVN)
 OUTPUT inserted.AccountId, inserted.Username, inserted.PasswordHash, inserted.Reputation, inserted.RankPoints,
        inserted.CreatedAtUtc, inserted.Uid, inserted.Email, inserted.LastLoginVN, inserted.LoginCount, inserted.CreatedVN
-VALUES (@name, NULL, 100, 100, @utcNow, @uid, @email, @vnNow, 1, @vnNow)";
+VALUES (@name, NULL, 100, 0, @utcNow, @uid, @email, @vnNow, 1, @vnNow)";
         cmd.Parameters.Add("@name", SqlDbType.NVarChar, 50).Value = username;
         cmd.Parameters.Add("@utcNow", SqlDbType.DateTime2, 0).Value = utcNow;
         cmd.Parameters.Add("@uid", SqlDbType.NVarChar, 128).Value = uid;

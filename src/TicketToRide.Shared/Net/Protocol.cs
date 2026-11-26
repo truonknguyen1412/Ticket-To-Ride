@@ -56,11 +56,15 @@ public static class MessageTypes
     public const string AuthLogin = "AUTH_LOGIN";         // idToken Firebase -> WELCOME
     public const string AuthForgot = "AUTH_FORGOT";       // email -> ACK (server nhờ Firebase gửi mail đặt lại MK)
     public const string AuthLogout = "AUTH_LOGOUT";       // thu hồi token của phiên hiện tại -> ACK
+    // Hồ sơ người chơi
+    public const string GetProfile = "GET_PROFILE";
+    public const string ProfileStats = "PROFILE_STATS";
 }
 
 /// <summary>Mã lỗi. Có trong tài liệu: ROOM_IN_GAME, GAME_ENDED, RESUME_REJECTED, INTERNAL_ERROR. Còn lại là [Giả định].</summary>
 public static class ErrorCodes
 {
+    public const string ProfileUnavailable = "PROFILE_UNAVAILABLE";
     public const string RoomInGame = "ROOM_IN_GAME";
     public const string GameEnded = "GAME_ENDED";
     public const string ResumeRejected = "RESUME_REJECTED";

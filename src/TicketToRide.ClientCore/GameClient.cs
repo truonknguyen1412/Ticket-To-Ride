@@ -206,7 +206,23 @@ public sealed class GameClient : IDisposable
     }
 
     // ------------------------------------------------------------ API phòng chờ & ghép trận
+    // ------------------------------------------------------------ API hồ sơ người chơi
 
+    /// <summary>
+    /// Lấy điểm Rank và Uy tín mới nhất của tài khoản đang đăng nhập.
+    /// </summary>
+    public async Task<ProfileStatsPayload> GetProfileStatsAsync()
+    {
+        var reply = await RequestAsync(
+            MessageTypes.GetProfile,
+            timeoutMs: 10_000
+        );
+
+        return reply.ReadPayload<ProfileStatsPayload>()
+            ?? throw new InvalidDataException(
+                "Server trả về dữ liệu hồ sơ không hợp lệ."
+            );
+    }
     /// <returns>Mã phòng 6 chữ số.</returns>
     public async Task<string> CreateRoomAsync()
     {

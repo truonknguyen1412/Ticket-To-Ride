@@ -21,7 +21,7 @@ public sealed class SessionManager
 
     public int Count => _byPlayer.Count;
 
-    public Session Create(string playerName, string? accountId = null, string? email = null, Guid? dbAccountId = null, int rankPoints = 100)
+    public Session Create(string playerName, string? accountId = null, string? email = null, Guid? dbAccountId = null, int rankPoints = 0)
     {
         var s = new Session(Guid.NewGuid().ToString("N"), playerName, NewToken(), accountId, email, dbAccountId)
         {
