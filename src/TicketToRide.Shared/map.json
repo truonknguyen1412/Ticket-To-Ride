@@ -1,228 +1,224 @@
 {
-  "mapVersion": "1.0",
+  "mapVersion": "2.0",
   "cities": [
     {
-      "cityCode": "SAPA",
-      "name": "Sa Pa",
-      "x": 365,
-      "y": 55
-    },
-    {
-      "cityCode": "HAGIANG",
-      "name": "Hà Giang",
-      "x": 455,
-      "y": 45
-    },
-    {
-      "cityCode": "CAOBANG",
-      "name": "Cao Bằng",
-      "x": 535,
-      "y": 55
-    },
-    {
-      "cityCode": "HANOI",
-      "name": "Hà Nội",
-      "x": 455,
-      "y": 115
-    },
-    {
-      "cityCode": "HAIPHONG",
-      "name": "Hải Phòng",
-      "x": 535,
-      "y": 125
-    },
-    {
-      "cityCode": "HALONG",
-      "name": "Hạ Long",
-      "x": 595,
-      "y": 105
-    },
-    {
-      "cityCode": "NINHBINH",
-      "name": "Ninh Bình",
-      "x": 465,
-      "y": 165
-    },
-    {
-      "cityCode": "VINH",
-      "name": "Vinh",
-      "x": 465,
-      "y": 225
-    },
-    {
-      "cityCode": "DONGHOI",
-      "name": "Đồng Hới",
-      "x": 505,
-      "y": 280
-    },
-    {
-      "cityCode": "HUE",
-      "name": "Huế",
-      "x": 555,
-      "y": 325
-    },
-    {
-      "cityCode": "DANANG",
-      "name": "Đà Nẵng",
-      "x": 605,
-      "y": 355
-    },
-    {
-      "cityCode": "QUANGNGAI",
-      "name": "Quảng Ngãi",
-      "x": 625,
-      "y": 405
-    },
-    {
-      "cityCode": "KONTUM",
-      "name": "Kon Tum",
-      "x": 565,
-      "y": 425
-    },
-    {
-      "cityCode": "QUYNHON",
-      "name": "Quy Nhơn",
-      "x": 635,
-      "y": 460
-    },
-    {
-      "cityCode": "PLEIKU",
-      "name": "Pleiku",
-      "x": 565,
-      "y": 475
-    },
-    {
-      "cityCode": "BUONMATHUOT",
-      "name": "Buôn Ma Thuột",
-      "x": 565,
-      "y": 515
-    },
-    {
-      "cityCode": "NHATRANG",
-      "name": "Nha Trang",
-      "x": 635,
-      "y": 525
-    },
-    {
-      "cityCode": "DALAT",
-      "name": "Đà Lạt",
-      "x": 575,
-      "y": 560
-    },
-    {
-      "cityCode": "PHANTHIET",
-      "name": "Phan Thiết",
-      "x": 630,
-      "y": 605
-    },
-    {
-      "cityCode": "HCM",
-      "name": "TP. Hồ Chí Minh",
-      "x": 525,
-      "y": 600
+      "cityCode": "CAMAU",
+      "name": "Cà Mau",
+      "x": 350,
+      "y": 1190
     },
     {
       "cityCode": "CANTHO",
       "name": "Cần Thơ",
-      "x": 475,
-      "y": 645
+      "x": 430,
+      "y": 1150
     },
     {
-      "cityCode": "CAMAU",
-      "name": "Cà Mau",
-      "x": 425,
-      "y": 675
+      "cityCode": "DALAT",
+      "name": "Đà Lạt",
+      "x": 520,
+      "y": 970
+    },
+    {
+      "cityCode": "DANANG",
+      "name": "Đà Nẵng",
+      "x": 650,
+      "y": 650
+    },
+    {
+      "cityCode": "GIALAI",
+      "name": "Gia Lai (Pleiku)",
+      "x": 440,
+      "y": 800
+    },
+    {
+      "cityCode": "HAGIANG",
+      "name": "Hà Giang",
+      "x": 520,
+      "y": 35
+    },
+    {
+      "cityCode": "HAIPHONG",
+      "name": "Hải Phòng",
+      "x": 700,
+      "y": 240
+    },
+    {
+      "cityCode": "HANOI",
+      "name": "Hà Nội",
+      "x": 570,
+      "y": 230
+    },
+    {
+      "cityCode": "HOIAN",
+      "name": "Hội An",
+      "x": 690,
+      "y": 685
+    },
+    {
+      "cityCode": "HUE",
+      "name": "Huế",
+      "x": 560,
+      "y": 600
+    },
+    {
+      "cityCode": "LYSON",
+      "name": "Đảo Lý Sơn",
+      "x": 790,
+      "y": 770
+    },
+    {
+      "cityCode": "MOCHAU",
+      "name": "Mộc Châu",
+      "x": 420,
+      "y": 170
+    },
+    {
+      "cityCode": "NHATRANG",
+      "name": "Nha Trang",
+      "x": 700,
+      "y": 910
+    },
+    {
+      "cityCode": "NINHBINH",
+      "name": "Ninh Bình",
+      "x": 550,
+      "y": 300
+    },
+    {
+      "cityCode": "PHANTHIET",
+      "name": "Phan Thiết",
+      "x": 700,
+      "y": 1030
+    },
+    {
+      "cityCode": "PHONGNHA",
+      "name": "Phong Nha",
+      "x": 600,
+      "y": 470
     },
     {
       "cityCode": "PHUQUOC",
       "name": "Phú Quốc",
-      "x": 375,
-      "y": 625
+      "x": 190,
+      "y": 1100
+    },
+    {
+      "cityCode": "QUANGNGAI",
+      "name": "Quảng Ngãi",
+      "x": 620,
+      "y": 755
+    },
+    {
+      "cityCode": "QUANGTRI",
+      "name": "Quảng Trị",
+      "x": 490,
+      "y": 520
+    },
+    {
+      "cityCode": "SAPA",
+      "name": "Sa Pa",
+      "x": 330,
+      "y": 90
+    },
+    {
+      "cityCode": "TAYNINH",
+      "name": "Tây Ninh",
+      "x": 370,
+      "y": 1070
+    },
+    {
+      "cityCode": "THANHHOA",
+      "name": "Thanh Hóa",
+      "x": 480,
+      "y": 370
+    },
+    {
+      "cityCode": "TPHCM",
+      "name": "TP. Hồ Chí Minh",
+      "x": 540,
+      "y": 1080
+    },
+    {
+      "cityCode": "TUYHOA",
+      "name": "Tuy Hòa",
+      "x": 640,
+      "y": 850
+    },
+    {
+      "cityCode": "VUNGTAU",
+      "name": "Vũng Tàu",
+      "x": 660,
+      "y": 1120
     }
   ],
   "routes": [
     {
       "routeCode": "R01",
-      "cityACode": "SAPA",
-      "cityBCode": "HAGIANG",
-      "parallelIndex": 0,
-      "routeLength": 3,
-      "colorCode": "Green"
+      "cityACode": "HAGIANG",
+      "cityBCode": "SAPA",
+      "parallelIndex": 1,
+      "routeLength": 5,
+      "colorCode": "ORANGE"
     },
     {
       "routeCode": "R02",
-      "cityACode": "SAPA",
-      "cityBCode": "HANOI",
-      "parallelIndex": 0,
-      "routeLength": 4,
-      "colorCode": "Red"
+      "cityACode": "MOCHAU",
+      "cityBCode": "SAPA",
+      "parallelIndex": 1,
+      "routeLength": 3,
+      "colorCode": "RED"
     },
     {
       "routeCode": "R03",
-      "cityACode": "HAGIANG",
-      "cityBCode": "CAOBANG",
-      "parallelIndex": 0,
-      "routeLength": 3,
-      "colorCode": "Yellow"
+      "cityACode": "HANOI",
+      "cityBCode": "SAPA",
+      "parallelIndex": 1,
+      "routeLength": 6,
+      "colorCode": "BLUE"
     },
     {
       "routeCode": "R04",
       "cityACode": "HAGIANG",
       "cityBCode": "HANOI",
-      "parallelIndex": 0,
-      "routeLength": 3,
-      "colorCode": "Blue"
+      "parallelIndex": 1,
+      "routeLength": 5,
+      "colorCode": "WHITE"
     },
     {
       "routeCode": "R05",
-      "cityACode": "CAOBANG",
-      "cityBCode": "HANOI",
-      "parallelIndex": 0,
+      "cityACode": "HANOI",
+      "cityBCode": "MOCHAU",
+      "parallelIndex": 1,
       "routeLength": 4,
-      "colorCode": "Orange"
+      "colorCode": "YELLOW"
     },
     {
       "routeCode": "R06",
-      "cityACode": "CAOBANG",
-      "cityBCode": "HALONG",
-      "parallelIndex": 0,
-      "routeLength": 4,
-      "colorCode": "White"
-    },
-    {
-      "routeCode": "R07_A",
-      "cityACode": "HANOI",
-      "cityBCode": "HAIPHONG",
-      "parallelIndex": 0,
-      "routeLength": 2,
-      "colorCode": "Yellow"
-    },
-    {
-      "routeCode": "R07_B",
-      "cityACode": "HANOI",
-      "cityBCode": "HAIPHONG",
+      "cityACode": "MOCHAU",
+      "cityBCode": "THANHHOA",
       "parallelIndex": 1,
-      "routeLength": 2,
-      "colorCode": "Pink"
+      "routeLength": 5,
+      "colorCode": "BLACK"
+    },
+    {
+      "routeCode": "R07",
+      "cityACode": "HAIPHONG",
+      "cityBCode": "HANOI",
+      "parallelIndex": 1,
+      "routeLength": 3,
+      "colorCode": "GREEN"
     },
     {
       "routeCode": "R08",
       "cityACode": "HAIPHONG",
-      "cityBCode": "HALONG",
-      "parallelIndex": 0,
-      "routeLength": 2,
-      "colorCode": "Blue"
+      "cityBCode": "HANOI",
+      "parallelIndex": 2,
+      "routeLength": 3,
+      "colorCode": "PINK"
     },
     {
-      "routeCode": "R09_A",
-      "cityACode": "HANOI",
-      "cityBCode": "NINHBINH",
-      "parallelIndex": 0,
-      "routeLength": 2,
-      "colorCode": "Black"
-    },
-    {
-      "routeCode": "R09_B",
+      "routeCode": "R09",
       "cityACode": "HANOI",
       "cityBCode": "NINHBINH",
       "parallelIndex": 1,
@@ -231,389 +227,380 @@
     },
     {
       "routeCode": "R10",
+      "cityACode": "HANOI",
+      "cityBCode": "NINHBINH",
+      "parallelIndex": 2,
+      "routeLength": 2,
+      "colorCode": "RED"
+    },
+    {
+      "routeCode": "R11",
       "cityACode": "HAIPHONG",
       "cityBCode": "NINHBINH",
-      "parallelIndex": 0,
-      "routeLength": 2,
-      "colorCode": "Green"
-    },
-    {
-      "routeCode": "R11_A",
-      "cityACode": "NINHBINH",
-      "cityBCode": "VINH",
-      "parallelIndex": 0,
-      "routeLength": 3,
-      "colorCode": "Red"
-    },
-    {
-      "routeCode": "R11_B",
-      "cityACode": "NINHBINH",
-      "cityBCode": "VINH",
       "parallelIndex": 1,
-      "routeLength": 3,
-      "colorCode": "White"
+      "routeLength": 4,
+      "colorCode": "YELLOW"
     },
     {
       "routeCode": "R12",
-      "cityACode": "VINH",
-      "cityBCode": "DONGHOI",
-      "parallelIndex": 0,
-      "routeLength": 3,
-      "colorCode": "Orange"
-    },
-    {
-      "routeCode": "R13",
-      "cityACode": "DONGHOI",
-      "cityBCode": "HUE",
-      "parallelIndex": 0,
-      "routeLength": 3,
-      "colorCode": "Blue"
-    },
-    {
-      "routeCode": "R14_A",
-      "cityACode": "HUE",
-      "cityBCode": "DANANG",
-      "parallelIndex": 0,
-      "routeLength": 2,
-      "colorCode": "Green"
-    },
-    {
-      "routeCode": "R14_B",
-      "cityACode": "HUE",
-      "cityBCode": "DANANG",
+      "cityACode": "NINHBINH",
+      "cityBCode": "THANHHOA",
       "parallelIndex": 1,
       "routeLength": 2,
       "colorCode": null
     },
     {
-      "routeCode": "R15",
-      "cityACode": "DANANG",
-      "cityBCode": "KONTUM",
-      "parallelIndex": 0,
+      "routeCode": "R13",
+      "cityACode": "PHONGNHA",
+      "cityBCode": "THANHHOA",
+      "parallelIndex": 1,
+      "routeLength": 4,
+      "colorCode": "PINK"
+    },
+    {
+      "routeCode": "R14",
+      "cityACode": "PHONGNHA",
+      "cityBCode": "QUANGTRI",
+      "parallelIndex": 1,
       "routeLength": 3,
-      "colorCode": "Yellow"
+      "colorCode": "GREEN"
+    },
+    {
+      "routeCode": "R15",
+      "cityACode": "HUE",
+      "cityBCode": "PHONGNHA",
+      "parallelIndex": 1,
+      "routeLength": 3,
+      "colorCode": null
     },
     {
       "routeCode": "R16",
-      "cityACode": "DANANG",
-      "cityBCode": "QUANGNGAI",
-      "parallelIndex": 0,
-      "routeLength": 2,
-      "colorCode": "Pink"
+      "cityACode": "HUE",
+      "cityBCode": "QUANGTRI",
+      "parallelIndex": 1,
+      "routeLength": 3,
+      "colorCode": "BLACK"
     },
     {
       "routeCode": "R17",
-      "cityACode": "QUANGNGAI",
-      "cityBCode": "KONTUM",
-      "parallelIndex": 0,
+      "cityACode": "DANANG",
+      "cityBCode": "HUE",
+      "parallelIndex": 1,
       "routeLength": 2,
-      "colorCode": "Black"
+      "colorCode": null
     },
     {
       "routeCode": "R18",
-      "cityACode": "QUANGNGAI",
-      "cityBCode": "QUYNHON",
-      "parallelIndex": 0,
-      "routeLength": 3,
-      "colorCode": "Red"
+      "cityACode": "DANANG",
+      "cityBCode": "HUE",
+      "parallelIndex": 2,
+      "routeLength": 2,
+      "colorCode": "ORANGE"
     },
     {
       "routeCode": "R19",
-      "cityACode": "KONTUM",
-      "cityBCode": "PLEIKU",
-      "parallelIndex": 0,
+      "cityACode": "DANANG",
+      "cityBCode": "HOIAN",
+      "parallelIndex": 1,
       "routeLength": 1,
       "colorCode": null
     },
     {
       "routeCode": "R20",
-      "cityACode": "PLEIKU",
-      "cityBCode": "QUYNHON",
-      "parallelIndex": 0,
-      "routeLength": 3,
-      "colorCode": "White"
+      "cityACode": "DANANG",
+      "cityBCode": "HOIAN",
+      "parallelIndex": 2,
+      "routeLength": 1,
+      "colorCode": "WHITE"
     },
     {
       "routeCode": "R21",
-      "cityACode": "PLEIKU",
-      "cityBCode": "BUONMATHUOT",
-      "parallelIndex": 0,
-      "routeLength": 3,
-      "colorCode": "Green"
+      "cityACode": "HOIAN",
+      "cityBCode": "QUANGNGAI",
+      "parallelIndex": 1,
+      "routeLength": 2,
+      "colorCode": null
     },
     {
       "routeCode": "R22",
-      "cityACode": "QUYNHON",
-      "cityBCode": "NHATRANG",
-      "parallelIndex": 0,
+      "cityACode": "DANANG",
+      "cityBCode": "QUANGNGAI",
+      "parallelIndex": 1,
       "routeLength": 3,
-      "colorCode": "Orange"
+      "colorCode": "RED"
     },
     {
       "routeCode": "R23",
-      "cityACode": "BUONMATHUOT",
-      "cityBCode": "NHATRANG",
-      "parallelIndex": 0,
-      "routeLength": 3,
-      "colorCode": "Pink"
+      "cityACode": "LYSON",
+      "cityBCode": "QUANGNGAI",
+      "parallelIndex": 1,
+      "routeLength": 4,
+      "colorCode": "WHITE"
     },
     {
       "routeCode": "R24",
-      "cityACode": "BUONMATHUOT",
-      "cityBCode": "DALAT",
-      "parallelIndex": 0,
-      "routeLength": 2,
-      "colorCode": "Blue"
+      "cityACode": "LYSON",
+      "cityBCode": "TUYHOA",
+      "parallelIndex": 1,
+      "routeLength": 4,
+      "colorCode": "GREEN"
     },
     {
       "routeCode": "R25",
-      "cityACode": "BUONMATHUOT",
-      "cityBCode": "HCM",
-      "parallelIndex": 0,
-      "routeLength": 4,
-      "colorCode": "Black"
+      "cityACode": "QUANGNGAI",
+      "cityBCode": "TUYHOA",
+      "parallelIndex": 1,
+      "routeLength": 2,
+      "colorCode": null
     },
     {
       "routeCode": "R26",
-      "cityACode": "NHATRANG",
-      "cityBCode": "DALAT",
-      "parallelIndex": 0,
-      "routeLength": 2,
-      "colorCode": "Yellow"
+      "cityACode": "GIALAI",
+      "cityBCode": "QUANGNGAI",
+      "parallelIndex": 1,
+      "routeLength": 4,
+      "colorCode": "BLUE"
     },
     {
       "routeCode": "R27",
-      "cityACode": "NHATRANG",
-      "cityBCode": "PHANTHIET",
-      "parallelIndex": 0,
-      "routeLength": 3,
-      "colorCode": "White"
-    },
-    {
-      "routeCode": "R28_A",
-      "cityACode": "DALAT",
-      "cityBCode": "HCM",
-      "parallelIndex": 0,
-      "routeLength": 3,
-      "colorCode": "Red"
-    },
-    {
-      "routeCode": "R28_B",
-      "cityACode": "DALAT",
-      "cityBCode": "HCM",
+      "cityACode": "GIALAI",
+      "cityBCode": "TUYHOA",
       "parallelIndex": 1,
-      "routeLength": 3,
-      "colorCode": null
+      "routeLength": 5,
+      "colorCode": "ORANGE"
+    },
+    {
+      "routeCode": "R28",
+      "cityACode": "DALAT",
+      "cityBCode": "GIALAI",
+      "parallelIndex": 1,
+      "routeLength": 4,
+      "colorCode": "PINK"
     },
     {
       "routeCode": "R29",
-      "cityACode": "DALAT",
-      "cityBCode": "PHANTHIET",
-      "parallelIndex": 0,
-      "routeLength": 2,
-      "colorCode": "Green"
-    },
-    {
-      "routeCode": "R30_A",
-      "cityACode": "PHANTHIET",
-      "cityBCode": "HCM",
-      "parallelIndex": 0,
-      "routeLength": 3,
-      "colorCode": "Orange"
-    },
-    {
-      "routeCode": "R30_B",
-      "cityACode": "PHANTHIET",
-      "cityBCode": "HCM",
-      "parallelIndex": 1,
-      "routeLength": 3,
-      "colorCode": "Blue"
-    },
-    {
-      "routeCode": "R31_A",
-      "cityACode": "HCM",
-      "cityBCode": "CANTHO",
-      "parallelIndex": 0,
-      "routeLength": 2,
-      "colorCode": "Pink"
-    },
-    {
-      "routeCode": "R31_B",
-      "cityACode": "HCM",
-      "cityBCode": "CANTHO",
+      "cityACode": "NHATRANG",
+      "cityBCode": "TUYHOA",
       "parallelIndex": 1,
       "routeLength": 2,
       "colorCode": null
+    },
+    {
+      "routeCode": "R30",
+      "cityACode": "NHATRANG",
+      "cityBCode": "TUYHOA",
+      "parallelIndex": 2,
+      "routeLength": 2,
+      "colorCode": "YELLOW"
+    },
+    {
+      "routeCode": "R31",
+      "cityACode": "DALAT",
+      "cityBCode": "NHATRANG",
+      "parallelIndex": 1,
+      "routeLength": 5,
+      "colorCode": "RED"
     },
     {
       "routeCode": "R32",
-      "cityACode": "CANTHO",
-      "cityBCode": "CAMAU",
-      "parallelIndex": 0,
+      "cityACode": "NHATRANG",
+      "cityBCode": "PHANTHIET",
+      "parallelIndex": 1,
       "routeLength": 3,
-      "colorCode": "Yellow"
+      "colorCode": "BLACK"
     },
     {
       "routeCode": "R33",
-      "cityACode": "CANTHO",
-      "cityBCode": "PHUQUOC",
-      "parallelIndex": 0,
-      "routeLength": 4,
-      "colorCode": "Black"
+      "cityACode": "DALAT",
+      "cityBCode": "PHANTHIET",
+      "parallelIndex": 1,
+      "routeLength": 5,
+      "colorCode": "BLUE"
     },
     {
       "routeCode": "R34",
+      "cityACode": "DALAT",
+      "cityBCode": "TPHCM",
+      "parallelIndex": 1,
+      "routeLength": 3,
+      "colorCode": "YELLOW"
+    },
+    {
+      "routeCode": "R35",
+      "cityACode": "PHANTHIET",
+      "cityBCode": "VUNGTAU",
+      "parallelIndex": 1,
+      "routeLength": 2,
+      "colorCode": null
+    },
+    {
+      "routeCode": "R36",
+      "cityACode": "PHANTHIET",
+      "cityBCode": "TPHCM",
+      "parallelIndex": 1,
+      "routeLength": 4,
+      "colorCode": "GREEN"
+    },
+    {
+      "routeCode": "R37",
+      "cityACode": "TPHCM",
+      "cityBCode": "VUNGTAU",
+      "parallelIndex": 1,
+      "routeLength": 3,
+      "colorCode": "WHITE"
+    },
+    {
+      "routeCode": "R38",
+      "cityACode": "TPHCM",
+      "cityBCode": "VUNGTAU",
+      "parallelIndex": 2,
+      "routeLength": 3,
+      "colorCode": "BLACK"
+    },
+    {
+      "routeCode": "R39",
+      "cityACode": "TAYNINH",
+      "cityBCode": "TPHCM",
+      "parallelIndex": 1,
+      "routeLength": 4,
+      "colorCode": "PINK"
+    },
+    {
+      "routeCode": "R40",
+      "cityACode": "CANTHO",
+      "cityBCode": "TPHCM",
+      "parallelIndex": 1,
+      "routeLength": 3,
+      "colorCode": "ORANGE"
+    },
+    {
+      "routeCode": "R41",
+      "cityACode": "CANTHO",
+      "cityBCode": "TPHCM",
+      "parallelIndex": 2,
+      "routeLength": 3,
+      "colorCode": "RED"
+    },
+    {
+      "routeCode": "R42",
+      "cityACode": "DALAT",
+      "cityBCode": "TAYNINH",
+      "parallelIndex": 1,
+      "routeLength": 4,
+      "colorCode": "WHITE"
+    },
+    {
+      "routeCode": "R43",
+      "cityACode": "CAMAU",
+      "cityBCode": "CANTHO",
+      "parallelIndex": 1,
+      "routeLength": 2,
+      "colorCode": null
+    },
+    {
+      "routeCode": "R44",
+      "cityACode": "CANTHO",
+      "cityBCode": "PHUQUOC",
+      "parallelIndex": 1,
+      "routeLength": 6,
+      "colorCode": "YELLOW"
+    },
+    {
+      "routeCode": "R45",
       "cityACode": "CAMAU",
       "cityBCode": "PHUQUOC",
-      "parallelIndex": 0,
-      "routeLength": 3,
+      "parallelIndex": 1,
+      "routeLength": 4,
+      "colorCode": "GREEN"
+    },
+    {
+      "routeCode": "R46",
+      "cityACode": "CANTHO",
+      "cityBCode": "VUNGTAU",
+      "parallelIndex": 1,
+      "routeLength": 6,
+      "colorCode": "PINK"
+    },
+    {
+      "routeCode": "R47",
+      "cityACode": "HAGIANG",
+      "cityBCode": "MOCHAU",
+      "parallelIndex": 1,
+      "routeLength": 4,
+      "colorCode": "BLUE"
+    },
+    {
+      "routeCode": "R48",
+      "cityACode": "QUANGTRI",
+      "cityBCode": "THANHHOA",
+      "parallelIndex": 1,
+      "routeLength": 4,
+      "colorCode": "ORANGE"
+    },
+    {
+      "routeCode": "R49",
+      "cityACode": "CANTHO",
+      "cityBCode": "TAYNINH",
+      "parallelIndex": 1,
+      "routeLength": 2,
       "colorCode": null
+    },
+    {
+      "routeCode": "R50",
+      "cityACode": "HOIAN",
+      "cityBCode": "LYSON",
+      "parallelIndex": 1,
+      "routeLength": 3,
+      "colorCode": "BLACK"
+    },
+    {
+      "routeCode": "R51",
+      "cityACode": "DALAT",
+      "cityBCode": "TUYHOA",
+      "parallelIndex": 1,
+      "routeLength": 4,
+      "colorCode": "BLACK"
+    },
+    {
+      "routeCode": "R52",
+      "cityACode": "PHUQUOC",
+      "cityBCode": "TPHCM",
+      "parallelIndex": 1,
+      "routeLength": 6,
+      "colorCode": "BLUE"
+    },
+    {
+      "routeCode": "R53",
+      "cityACode": "GIALAI",
+      "cityBCode": "NHATRANG",
+      "parallelIndex": 1,
+      "routeLength": 6,
+      "colorCode": "WHITE"
+    },
+    {
+      "routeCode": "R54",
+      "cityACode": "DANANG",
+      "cityBCode": "QUANGTRI",
+      "parallelIndex": 1,
+      "routeLength": 5,
+      "colorCode": "YELLOW"
+    },
+    {
+      "routeCode": "R55",
+      "cityACode": "HOIAN",
+      "cityBCode": "HUE",
+      "parallelIndex": 1,
+      "routeLength": 4,
+      "colorCode": "RED"
+    },
+    {
+      "routeCode": "R56",
+      "cityACode": "NINHBINH",
+      "cityBCode": "PHONGNHA",
+      "parallelIndex": 1,
+      "routeLength": 4,
+      "colorCode": "ORANGE"
     }
   ],
-  "destinationTickets": [
-    {
-      "ticketCode": "T01",
-      "cityACode": "SAPA",
-      "cityBCode": "HALONG",
-      "points": 8
-    },
-    {
-      "ticketCode": "T02",
-      "cityACode": "HAGIANG",
-      "cityBCode": "VINH",
-      "points": 8
-    },
-    {
-      "ticketCode": "T03",
-      "cityACode": "CAOBANG",
-      "cityBCode": "NINHBINH",
-      "points": 6
-    },
-    {
-      "ticketCode": "T04",
-      "cityACode": "HANOI",
-      "cityBCode": "HUE",
-      "points": 11
-    },
-    {
-      "ticketCode": "T05",
-      "cityACode": "HAIPHONG",
-      "cityBCode": "DANANG",
-      "points": 13
-    },
-    {
-      "ticketCode": "T06",
-      "cityACode": "SAPA",
-      "cityBCode": "DANANG",
-      "points": 16
-    },
-    {
-      "ticketCode": "T07",
-      "cityACode": "NINHBINH",
-      "cityBCode": "KONTUM",
-      "points": 14
-    },
-    {
-      "ticketCode": "T08",
-      "cityACode": "VINH",
-      "cityBCode": "QUYNHON",
-      "points": 13
-    },
-    {
-      "ticketCode": "T09",
-      "cityACode": "DONGHOI",
-      "cityBCode": "PLEIKU",
-      "points": 11
-    },
-    {
-      "ticketCode": "T10",
-      "cityACode": "HUE",
-      "cityBCode": "NHATRANG",
-      "points": 12
-    },
-    {
-      "ticketCode": "T11",
-      "cityACode": "DANANG",
-      "cityBCode": "DALAT",
-      "points": 12
-    },
-    {
-      "ticketCode": "T12",
-      "cityACode": "QUANGNGAI",
-      "cityBCode": "HCM",
-      "points": 13
-    },
-    {
-      "ticketCode": "T13",
-      "cityACode": "KONTUM",
-      "cityBCode": "PHANTHIET",
-      "points": 10
-    },
-    {
-      "ticketCode": "T14",
-      "cityACode": "PLEIKU",
-      "cityBCode": "CANTHO",
-      "points": 11
-    },
-    {
-      "ticketCode": "T15",
-      "cityACode": "QUYNHON",
-      "cityBCode": "HCM",
-      "points": 9
-    },
-    {
-      "ticketCode": "T16",
-      "cityACode": "BUONMATHUOT",
-      "cityBCode": "PHUQUOC",
-      "points": 10
-    },
-    {
-      "ticketCode": "T17",
-      "cityACode": "NHATRANG",
-      "cityBCode": "CAMAU",
-      "points": 11
-    },
-    {
-      "ticketCode": "T18",
-      "cityACode": "DALAT",
-      "cityBCode": "PHUQUOC",
-      "points": 9
-    },
-    {
-      "ticketCode": "T19",
-      "cityACode": "HCM",
-      "cityBCode": "CAMAU",
-      "points": 5
-    },
-    {
-      "ticketCode": "T20",
-      "cityACode": "HANOI",
-      "cityBCode": "NHATRANG",
-      "points": 18
-    },
-    {
-      "ticketCode": "T21",
-      "cityACode": "HANOI",
-      "cityBCode": "HCM",
-      "points": 20
-    },
-    {
-      "ticketCode": "T22",
-      "cityACode": "HAIPHONG",
-      "cityBCode": "CANTHO",
-      "points": 21
-    },
-    {
-      "ticketCode": "T23",
-      "cityACode": "SAPA",
-      "cityBCode": "HCM",
-      "points": 22
-    },
-    {
-      "ticketCode": "T24",
-      "cityACode": "HAGIANG",
-      "cityBCode": "CAMAU",
-      "points": 24
-    }
-  ]
+  "destinationTickets": []
 }

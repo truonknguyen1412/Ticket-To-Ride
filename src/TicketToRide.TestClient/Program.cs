@@ -3,6 +3,7 @@ using System.Text.Json;
 using TicketToRide.ClientCore;
 using TicketToRide.Shared;
 using TicketToRide.Shared.Net;
+using TicketToRide.Shared.Models;
 
 // Cách dùng:
 //   auth  <host> <port> <firebaseApiKey> <email> <password> [username]
@@ -21,6 +22,7 @@ switch (args[0])
 {
     case "auth": await AuthScenario(args); break;
     case "rooms": await RoomsScenario(args); break;
+    case "map": MapScenario(args); break;
     default: Usage(); break;
 }
 return;
@@ -200,10 +202,23 @@ async Task RoomsScenario(string[] a)
     await p3.DisconnectAsync();
     Console.WriteLine("Xong");
 }
-
+void MapScenario(string[] a)
+{
+    var m = MapData.Load(a.Length > 1 ? a[1] : null);
+    Section($"BẢN ĐỒ (version {m.MapVersion})");
+    var errs = MapValidator.Validate(m);
+    foreach (var e in errs) Console.WriteLine($"  [SAI]  {e}");
+    failed += errs.Count;
+    Console.WriteLine($"  {m.Cities.Count} thành phố, {m.Routes.Count} tuyến, " +
+        $"tổng {m.Routes.Sum(r => (int)r.RouteLength)} toa, " +
+        $"{m.Routes.Count(r => r.IsGrayRoute())} tuyến xám, " +
+        $"tổng điểm tuyến {MapValidator.TotalPoints(m)}");
+    if (errs.Count == 0) Console.WriteLine("  [DUNG] dữ liệu bản đồ hợp lệ");
+}
 void Usage()
 {
     Console.WriteLine("Cách dùng:");
     Console.WriteLine("  auth  <host> <port> <firebaseApiKey> <email> <password> [username]");
     Console.WriteLine("  rooms [host] [port]      (server phải chạy với --dev)");
+    Console.WriteLine("  map   [đường_dẫn_map.json]");
 }
