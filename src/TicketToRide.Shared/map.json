@@ -1,5 +1,5 @@
 {
-  "mapVersion": "2.0",
+  "mapVersion": "2.1",
   "cities": [
     {
       "cityCode": "CAMAU",
@@ -602,5 +602,366 @@
       "colorCode": "ORANGE"
     }
   ],
-  "destinationTickets": []
+  "destinationTickets": [
+    {
+      "ticketCode": "T01",
+      "cityACode": "CANTHO",
+      "cityBCode": "DALAT",
+      "points": 6
+    },
+    {
+      "ticketCode": "T02",
+      "cityACode": "MOCHAU",
+      "cityBCode": "NINHBINH",
+      "points": 6
+    },
+    {
+      "ticketCode": "T03",
+      "cityACode": "NINHBINH",
+      "cityBCode": "QUANGTRI",
+      "points": 6
+    },
+    {
+      "ticketCode": "T04",
+      "cityACode": "PHANTHIET",
+      "cityBCode": "TUYHOA",
+      "points": 7
+    },
+    {
+      "ticketCode": "T05",
+      "cityACode": "HOIAN",
+      "cityBCode": "PHONGNHA",
+      "points": 8
+    },
+    {
+      "ticketCode": "T06",
+      "cityACode": "HUE",
+      "cityBCode": "LYSON",
+      "points": 8
+    },
+    {
+      "ticketCode": "T07",
+      "cityACode": "TPHCM",
+      "cityBCode": "TUYHOA",
+      "points": 8
+    },
+    {
+      "ticketCode": "T08",
+      "cityACode": "DALAT",
+      "cityBCode": "HOIAN",
+      "points": 9
+    },
+    {
+      "ticketCode": "T09",
+      "cityACode": "DANANG",
+      "cityBCode": "GIALAI",
+      "points": 9
+    },
+    {
+      "ticketCode": "T10",
+      "cityACode": "HAGIANG",
+      "cityBCode": "NINHBINH",
+      "points": 9
+    },
+    {
+      "ticketCode": "T11",
+      "cityACode": "HAGIANG",
+      "cityBCode": "THANHHOA",
+      "points": 9
+    },
+    {
+      "ticketCode": "T12",
+      "cityACode": "HAIPHONG",
+      "cityBCode": "PHONGNHA",
+      "points": 9
+    },
+    {
+      "ticketCode": "T13",
+      "cityACode": "HOIAN",
+      "cityBCode": "NHATRANG",
+      "points": 9
+    },
+    {
+      "ticketCode": "T14",
+      "cityACode": "SAPA",
+      "cityBCode": "THANHHOA",
+      "points": 9
+    },
+    {
+      "ticketCode": "T15",
+      "cityACode": "TUYHOA",
+      "cityBCode": "VUNGTAU",
+      "points": 9
+    },
+    {
+      "ticketCode": "T16",
+      "cityACode": "CAMAU",
+      "cityBCode": "DALAT",
+      "points": 10
+    },
+    {
+      "ticketCode": "T17",
+      "cityACode": "GIALAI",
+      "cityBCode": "VUNGTAU",
+      "points": 10
+    },
+    {
+      "ticketCode": "T18",
+      "cityACode": "PHANTHIET",
+      "cityBCode": "QUANGNGAI",
+      "points": 10
+    },
+    {
+      "ticketCode": "T19",
+      "cityACode": "CANTHO",
+      "cityBCode": "TUYHOA",
+      "points": 11
+    },
+    {
+      "ticketCode": "T20",
+      "cityACode": "GIALAI",
+      "cityBCode": "HUE",
+      "points": 11
+    },
+    {
+      "ticketCode": "T21",
+      "cityACode": "HAIPHONG",
+      "cityBCode": "SAPA",
+      "points": 11
+    },
+    {
+      "ticketCode": "T22",
+      "cityACode": "QUANGNGAI",
+      "cityBCode": "VUNGTAU",
+      "points": 11
+    },
+    {
+      "ticketCode": "T23",
+      "cityACode": "DANANG",
+      "cityBCode": "PHANTHIET",
+      "points": 12
+    },
+    {
+      "ticketCode": "T24",
+      "cityACode": "HAIPHONG",
+      "cityBCode": "HUE",
+      "points": 12
+    },
+    {
+      "ticketCode": "T25",
+      "cityACode": "HOIAN",
+      "cityBCode": "TPHCM",
+      "points": 12
+    },
+    {
+      "ticketCode": "T26",
+      "cityACode": "HUE",
+      "cityBCode": "NHATRANG",
+      "points": 12
+    },
+    {
+      "ticketCode": "T27",
+      "cityACode": "PHANTHIET",
+      "cityBCode": "PHUQUOC",
+      "points": 12
+    },
+    {
+      "ticketCode": "T28",
+      "cityACode": "QUANGNGAI",
+      "cityBCode": "TAYNINH",
+      "points": 12
+    },
+    {
+      "ticketCode": "T29",
+      "cityACode": "HAGIANG",
+      "cityBCode": "QUANGTRI",
+      "points": 13
+    },
+    {
+      "ticketCode": "T30",
+      "cityACode": "HOIAN",
+      "cityBCode": "VUNGTAU",
+      "points": 13
+    },
+    {
+      "ticketCode": "T31",
+      "cityACode": "NINHBINH",
+      "cityBCode": "QUANGNGAI",
+      "points": 13
+    },
+    {
+      "ticketCode": "T32",
+      "cityACode": "CAMAU",
+      "cityBCode": "GIALAI",
+      "points": 14
+    },
+    {
+      "ticketCode": "T33",
+      "cityACode": "CAMAU",
+      "cityBCode": "NHATRANG",
+      "points": 14
+    },
+    {
+      "ticketCode": "T34",
+      "cityACode": "HUE",
+      "cityBCode": "PHANTHIET",
+      "points": 14
+    },
+    {
+      "ticketCode": "T35",
+      "cityACode": "QUANGTRI",
+      "cityBCode": "SAPA",
+      "points": 14
+    },
+    {
+      "ticketCode": "T36",
+      "cityACode": "CANTHO",
+      "cityBCode": "HOIAN",
+      "points": 15
+    },
+    {
+      "ticketCode": "T37",
+      "cityACode": "CANTHO",
+      "cityBCode": "LYSON",
+      "points": 15
+    },
+    {
+      "ticketCode": "T38",
+      "cityACode": "HAGIANG",
+      "cityBCode": "HUE",
+      "points": 15
+    },
+    {
+      "ticketCode": "T39",
+      "cityACode": "LYSON",
+      "cityBCode": "THANHHOA",
+      "points": 15
+    },
+    {
+      "ticketCode": "T40",
+      "cityACode": "NHATRANG",
+      "cityBCode": "PHONGNHA",
+      "points": 15
+    },
+    {
+      "ticketCode": "T41",
+      "cityACode": "DALAT",
+      "cityBCode": "PHONGNHA",
+      "points": 16
+    },
+    {
+      "ticketCode": "T42",
+      "cityACode": "HANOI",
+      "cityBCode": "QUANGNGAI",
+      "points": 16
+    },
+    {
+      "ticketCode": "T43",
+      "cityACode": "DANANG",
+      "cityBCode": "SAPA",
+      "points": 17
+    },
+    {
+      "ticketCode": "T44",
+      "cityACode": "CAMAU",
+      "cityBCode": "HOIAN",
+      "points": 18
+    },
+    {
+      "ticketCode": "T45",
+      "cityACode": "CAMAU",
+      "cityBCode": "LYSON",
+      "points": 18
+    },
+    {
+      "ticketCode": "T46",
+      "cityACode": "NHATRANG",
+      "cityBCode": "NINHBINH",
+      "points": 19
+    },
+    {
+      "ticketCode": "T47",
+      "cityACode": "PHONGNHA",
+      "cityBCode": "TPHCM",
+      "points": 19
+    },
+    {
+      "ticketCode": "T48",
+      "cityACode": "LYSON",
+      "cityBCode": "MOCHAU",
+      "points": 20
+    },
+    {
+      "ticketCode": "T49",
+      "cityACode": "PHONGNHA",
+      "cityBCode": "TAYNINH",
+      "points": 20
+    },
+    {
+      "ticketCode": "T50",
+      "cityACode": "NINHBINH",
+      "cityBCode": "PHANTHIET",
+      "points": 21
+    },
+    {
+      "ticketCode": "T51",
+      "cityACode": "CANTHO",
+      "cityBCode": "PHONGNHA",
+      "points": 22
+    },
+    {
+      "ticketCode": "T52",
+      "cityACode": "HUE",
+      "cityBCode": "PHUQUOC",
+      "points": 22
+    },
+    {
+      "ticketCode": "T53",
+      "cityACode": "HAIPHONG",
+      "cityBCode": "NHATRANG",
+      "points": 23
+    },
+    {
+      "ticketCode": "T54",
+      "cityACode": "NINHBINH",
+      "cityBCode": "VUNGTAU",
+      "points": 23
+    },
+    {
+      "ticketCode": "T55",
+      "cityACode": "TAYNINH",
+      "cityBCode": "THANHHOA",
+      "points": 24
+    },
+    {
+      "ticketCode": "T56",
+      "cityACode": "HANOI",
+      "cityBCode": "VUNGTAU",
+      "points": 25
+    },
+    {
+      "ticketCode": "T57",
+      "cityACode": "PHUQUOC",
+      "cityBCode": "QUANGTRI",
+      "points": 25
+    },
+    {
+      "ticketCode": "T58",
+      "cityACode": "MOCHAU",
+      "cityBCode": "TPHCM",
+      "points": 27
+    },
+    {
+      "ticketCode": "T59",
+      "cityACode": "HAGIANG",
+      "cityBCode": "TPHCM",
+      "points": 29
+    },
+    {
+      "ticketCode": "T60",
+      "cityACode": "CAMAU",
+      "cityBCode": "HANOI",
+      "points": 30
+    }
+  ]
 }
