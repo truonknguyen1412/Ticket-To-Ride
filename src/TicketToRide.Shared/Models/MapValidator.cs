@@ -64,6 +64,20 @@ public static class MapValidator
             if (seen.Count != cities.Count)
                 err.Add("Đồ thị không liên thông, cô lập: " + string.Join(", ", cities.Keys.Except(seen)));
         }
+        // --- vé nhiệm vụ (nếu có)
+        var tcodes = new HashSet<string>();
+        var pairs = new HashSet<(string, string)>();
+        foreach (var t in m.DestinationTickets)
+        {
+            if (!tcodes.Add(t.TicketCode)) err.Add($"Trùng mã vé {t.TicketCode}");
+            if (!CodeOk(t.TicketCode)) err.Add($"{t.TicketCode}: mã vé sai định dạng");
+            if (!cities.ContainsKey(t.CityACode) || !cities.ContainsKey(t.CityBCode)) { err.Add($"{t.TicketCode}: thành phố không tồn tại"); continue; }
+            if (string.CompareOrdinal(t.CityACode, t.CityBCode) >= 0) err.Add($"{t.TicketCode}: phải CityA < CityB");
+            if (t.Points <= 0) err.Add($"{t.TicketCode}: điểm phải > 0");
+            if (!pairs.Add((t.CityACode, t.CityBCode))) err.Add($"{t.TicketCode}: trùng cặp thành phố với vé khác");
+        }
+        if (m.DestinationTickets.Count > 0 && (m.DestinationTickets.Count < 55 || m.DestinationTickets.Count > 65))
+            err.Add($"Số vé nên khoảng 60, đang có {m.DestinationTickets.Count}");
         return err;
     }
 }
